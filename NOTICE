@@ -1,0 +1,10 @@
+DepLens
+Copyright 2026 Sneed IT
+
+Licensed under the Apache License, Version 2.0.
+
+This source repository includes the Gradle Wrapper scripts and bootstrap JAR,
+licensed under the Apache License, Version 2.0 by their original authors.
+Their original copyright and license notices are retained in the scripts and JAR.
+
+Third-party dependencies retain their own copyright notices and licenses.

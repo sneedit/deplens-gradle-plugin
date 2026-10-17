@@ -1,0 +1,129 @@
+import org.gradle.api.attributes.plugin.GradlePluginApiVersion
+
+plugins {
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+    id 'jacoco'
+    alias libs.plugins.gradle.plugin.publish
+    alias libs.plugins.error.prone
+}
+
+group = 'com.sneedit.deplens'
+version = providers.gradleProperty('version').getOrElse('0.1.0-SNAPSHOT')
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+    withJavadocJar()
+}
+
+// Declare the supported minimum in published variants, independently of the publishing runtime.
+['apiElements', 'runtimeElements'].each { configurationName ->
+    configurations.named(configurationName) {
+        attributes.attribute(GradlePluginApiVersion.GRADLE_PLUGIN_API_VERSION_ATTRIBUTE,
+                objects.named(GradlePluginApiVersion, '8.8'))
+    }
+}
+
+def springProtobufTestDependencies = configurations.dependencyScope('springProtobufTestPlugins')
+def springKotlinTestDependencies = configurations.dependencyScope('springKotlinTestPlugins') {
+    extendsFrom(springProtobufTestDependencies.get())
+}
+def springProtobufTestConfiguration = configurations.resolvable('springProtobufTestClasspath') {
+    extendsFrom(springProtobufTestDependencies.get())
+}
+def springKotlinTestConfiguration = configurations.resolvable('springKotlinTestClasspath') {
+    extendsFrom(springKotlinTestDependencies.get())
+}
+
+dependencies {
+    implementation gradleApi()
+    api libs.jspecify
+    errorprone libs.error.prone
+    errorprone libs.null.away
+    implementation libs.gson
+    implementation 'org.tomlj:tomlj:1.1.1'
+
+    testImplementation libs.junit.jupiter
+    testImplementation libs.assertj.core
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.junit.jupiter
+    testImplementation gradleTestKit()
+    testImplementation 'io.spring.gradle:dependency-management-plugin:1.1.7'
+    testRuntimeOnly libs.junit.platform.launcher
+    springProtobufTestPlugins 'org.springframework.boot:spring-boot-gradle-plugin:4.1.1'
+    springProtobufTestPlugins 'com.google.protobuf:protobuf-gradle-plugin:0.10.0'
+    springProtobufTestPlugins 'io.spring.gradle:dependency-management-plugin:1.1.7'
+    springKotlinTestPlugins 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.errorprone {
+        // Test fixtures intentionally exercise absent values; enforce production contracts.
+        enabled = name == 'compileJava'
+        disableAllChecks = true
+        error('NullAway', 'RequireExplicitNullMarking')
+        option('NullAway:OnlyNullMarked', 'true')
+        option('NullAway:JSpecifyMode', 'true')
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    jvmArgumentProviders.add(new TestPluginClasspathArguments(
+            springProtobufTestConfiguration.get(), springKotlinTestConfiguration.get()))
+    systemProperty "deplens.test.gradleVersion", providers.gradleProperty("testGradleVersion").getOrElse(gradle.gradleVersion)
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(providers.gradleProperty('testJavaVersion').getOrElse('21'))
+    }
+    finalizedBy jacocoTestReport
+}
+
+// Resolve fixture plugins when tests run, and declare their files as test inputs.
+class TestPluginClasspathArguments implements CommandLineArgumentProvider {
+    private final FileCollection springProtobufClasspath
+    private final FileCollection springKotlinClasspath
+
+    TestPluginClasspathArguments(FileCollection springProtobufClasspath, FileCollection springKotlinClasspath) {
+        this.springProtobufClasspath = springProtobufClasspath
+        this.springKotlinClasspath = springKotlinClasspath
+    }
+
+    @Classpath
+    FileCollection getSpringProtobufClasspath() {
+        return springProtobufClasspath
+    }
+
+    @Classpath
+    FileCollection getSpringKotlinClasspath() {
+        return springKotlinClasspath
+    }
+
+    @Override
+    Iterable<String> asArguments() {
+        return [
+                "-Ddeplens.test.springProtobufClasspath=${springProtobufClasspath.asPath}".toString(),
+                "-Ddeplens.test.springKotlinClasspath=${springKotlinClasspath.asPath}".toString()
+        ]
+    }
+}
+
+jacoco {
+    toolVersion = '0.8.14'
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+// compileJava always enforces nullness; this task provides a focused CI/local entry point.
+tasks.register('nullAway') {
+    group = 'verification'
+    description = 'Compile production sources with strict JSpecify/NullAway checking'
+    dependsOn tasks.named('compileJava')
+}

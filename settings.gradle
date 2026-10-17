@@ -1,0 +1,9 @@
+rootProject.name = 'deplens-gradle-plugin'
+include 'plugin'
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}

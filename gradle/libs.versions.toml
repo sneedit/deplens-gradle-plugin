@@ -6,7 +6,7 @@ mockito = "5.24.0"
 gradlePluginPublish = "2.2.1"
 
 jspecify = "1.0.1"
-errorProne = "2.42.0"
+errorProne = "2.50.0"
 nullAway = "0.14.2"
 errorPronePlugin = "5.1.1"
 

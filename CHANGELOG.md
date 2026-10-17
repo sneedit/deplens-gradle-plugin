@@ -2,7 +2,7 @@
 
 Notable changes, generated from Conventional Commits by [git-cliff](https://git-cliff.org/).
 
-## Unreleased
+## [v0.1.0](https://github.com/sneedit/deplens-gradle-plugin/releases/tag/v0.1.0) - 2026-10-17
 
 ### Features
 

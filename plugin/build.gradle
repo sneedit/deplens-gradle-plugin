@@ -54,7 +54,7 @@ dependencies {
     springProtobufTestPlugins 'org.springframework.boot:spring-boot-gradle-plugin:4.1.1'
     springProtobufTestPlugins 'com.google.protobuf:protobuf-gradle-plugin:0.10.0'
     springProtobufTestPlugins 'io.spring.gradle:dependency-management-plugin:1.1.7'
-    springKotlinTestPlugins 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0'
+    springKotlinTestPlugins 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21'
 }
 
 tasks.withType(JavaCompile).configureEach {

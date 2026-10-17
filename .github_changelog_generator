@@ -1,0 +1,9 @@
+user=sneedit
+project=deplens-gradle-plugin
+output=CHANGELOG.md
+include-tags-regex=^v[0-9]+\.[0-9]+\.[0-9]+$
+unreleased=true
+issues=true
+pull-requests=true
+author=true
+compare-link=true

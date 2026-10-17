@@ -66,3 +66,12 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
           RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: gh release create "$RELEASE_TAG" release-artifacts/*.jar --verify-tag --generate-notes --title "Release $RELEASE_VERSION"
+
+  changelog:
+    name: Update Changelog After Release
+    needs: release
+    permissions:
+      contents: write
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/changelog.yml

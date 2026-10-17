@@ -1,5 +1,13 @@
 version: 2
 updates:
+  # Changelog generator
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+
   # Gradle dependencies
   - package-ecosystem: "gradle"
     directory: "/"

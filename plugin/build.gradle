@@ -145,6 +145,136 @@ gradlePlugin {
     }
 }
 
+// Keep the implementation and both generated plugin marker publications consistent.
+publishing {
+    // Local verification only; never uploads to the Plugin Portal or another remote repository.
+    repositories {
+        maven {
+            name = 'releaseVerification'
+            url = providers.gradleProperty('releaseVerificationDirectory').map { new File(it) }
+                    .orElse(layout.buildDirectory.dir('release-verification/repository').map { it.asFile })
+        }
+        maven {
+            name = 'centralStaging'
+            url = providers.gradleProperty('centralStagingDirectory').map { new File(it) }
+                    .orElse(layout.buildDirectory.dir('central-staging').map { it.asFile })
+        }
+    }
+    publications.withType(MavenPublication).configureEach {
+        pom {
+            name.convention('DepLens')
+            description.convention('Gradle-native dependency, plugin and wrapper updates with safe interactive version edits.')
+            url = repositoryUrl
+            inceptionYear = '2026'
+            developers {
+                developer {
+                    id = 'sneedit'
+                    name = 'Sneed IT'
+                    url = 'https://github.com/sneedit'
+                }
+            }
+            scm {
+                url = repositoryUrl
+                connection = repositoryUrl.map { 'scm:git:' + (it.endsWith('.git') ? it : it + '.git') }
+                developerConnection = connection
+            }
+            licenses {
+                license {
+                    name = 'The Apache License, Version 2.0'
+                    url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution = 'repo'
+                }
+            }
+        }
+    }
+}
+
+// Signing is opt-in so normal builds and local installation require no keys.
+def signPublications = providers.gradleProperty('signPublications').map(Boolean::parseBoolean).orElse(false)
+if (signPublications.get()) {
+    apply plugin: 'signing'
+    signing {
+        required = true
+        useInMemoryPgpKeys(providers.gradleProperty('signingInMemoryKey').getOrNull(),
+                providers.gradleProperty('signingInMemoryKeyPassword').getOrElse(''))
+    }
+    // com.gradle.plugin-publish signs its implementation and marker publications
+    // automatically when Gradle's signing plugin is applied.
+}
+
+// Ship legal notices with every published artifact, including sources and Javadoc.
+def legalNotices = files('../LICENSE', '../NOTICE')
+tasks.withType(Jar).configureEach {
+    manifest.attributes('Implementation-Title': 'DepLens', 'Implementation-Version': project.version.toString())
+    from(legalNotices) { into 'META-INF' }
+}
+
+// Validate locally without invoking the Portal task or reading publication credentials.
+@org.gradle.work.DisableCachingByDefault(because = 'Checks release inputs without producing an artifact')
+abstract class ValidateReleaseMetadata extends DefaultTask {
+    @Input
+    abstract Property<String> getReleaseVersion()
+
+    @Input
+    abstract Property<String> getRepositoryUrl()
+
+    @TaskAction
+    void validateReleaseMetadata() {
+        if (!(releaseVersion.get() ==~ /(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)/)) {
+            throw new GradleException('Expected a stable release version X.Y.Z, without leading zeros, a v prefix or prerelease suffix.')
+        }
+        def address = repositoryUrl.get()
+        try {
+            def uri = new URI(address)
+            if (uri.scheme != 'https' || !uri.host || uri.userInfo || uri.query || uri.fragment
+                    || !uri.path || uri.path == '/' || address.contains('REPLACE_ME') || address.contains('yourusername')) {
+                throw new IllegalArgumentException('Invalid repository metadata')
+            }
+        } catch (Exception ignored) {
+            throw new GradleException('Set repositoryUrl to the real HTTPS repository URL without credentials, query or fragment.')
+        }
+    }
+}
+
+def validateRelease = tasks.register('validateRelease', ValidateReleaseMetadata) {
+    group = 'verification'
+    description = 'Validate stable release version and repository metadata without publishing'
+    releaseVersion.set(project.version.toString())
+    getRepositoryUrl().set(providers.gradleProperty('repositoryUrl').orElse(''))
+}
+
+tasks.named('publishPlugins') {
+    dependsOn validateRelease
+}
+tasks.named('publishAllPublicationsToReleaseVerificationRepository') {
+    dependsOn validateRelease
+}
+
+@org.gradle.work.DisableCachingByDefault(because = 'Checks explicit signing opt-in without producing an artifact')
+abstract class ValidateCentralSigning extends DefaultTask {
+    @Input
+    abstract Property<Boolean> getSigningEnabled()
+
+    @TaskAction
+    void validateSigning() {
+        if (!signingEnabled.get()) {
+            throw new GradleException('Maven Central staging requires -PsignPublications=true and an in-memory PGP signing key.')
+        }
+    }
+}
+
+def validateCentralSigning = tasks.register('validateCentralSigning', ValidateCentralSigning) {
+    signingEnabled.set(signPublications)
+}
+tasks.withType(org.gradle.api.publish.maven.tasks.PublishToMavenRepository).configureEach {
+    if (name.endsWith('ToCentralStagingRepository')) {
+        dependsOn validateRelease, validateCentralSigning
+    }
+}
+tasks.withType(Sign).configureEach {
+    dependsOn validateRelease
+}
+
 // compileJava always enforces nullness; this task provides a focused CI/local entry point.
 tasks.register('nullAway') {
     group = 'verification'

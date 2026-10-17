@@ -1297,6 +1297,27 @@ class UpdateFunctionalTest {
         assertThat(Files.readString(dir.resolve("build.gradle"))).isEqualTo(build);
     }
 
+    /**
+     * Verifies that interactive task requires terminal and never edits in headless mode.
+     */
+    @Test
+    void interactiveTaskRequiresTerminalAndNeverEditsInHeadlessMode() throws Exception {
+        modules("org.test", "lib", "1.0.0", "2.0.0");
+        String build = """
+                plugins { id 'java'; id 'com.sneedit.deplens' }
+                repositories { maven { url = uri('repo') } }
+                dependencies { implementation 'org.test:lib:1.0.0' }
+                depLens { rules { gradle { pinned = true } } }
+                """;
+        write("build.gradle", build);
+        Map<String, String> environment = new HashMap<>(System.getenv());
+        environment.remove("DEPLENS_TTY");
+        var result = GradleRunner.create().withGradleVersion(System.getProperty("deplens.test.gradleVersion"))
+                .withProjectDir(dir.toFile()).withPluginClasspath().withEnvironment(environment)
+                .withArguments(":depLensInteractiveUpdate", "--offline").buildAndFail();
+        assertThat(plain(result)).contains("A terminal is required");
+        assertThat(Files.readString(dir.resolve("build.gradle"))).isEqualTo(build);
+    }
 
     /**
      * Verifies that default check is compact while info and JSON retain configuration details.

@@ -22,7 +22,10 @@ final class DepLensTaskRegistrar {
         register(project, "depLensCheckPlugins", CheckPluginUpdatesTask.class, "Check for available Gradle plugin updates", "depLensCheckPlugins");
         register(project, "depLensCheckGradle", CheckGradleUpdatesTask.class, "Check for available Gradle updates", "depLensCheckGradle");
         register(project, "depLensCheck", CheckUpdatesTask.class, "Check for all available updates (dependencies, plugins, Gradle)", "depLensCheck");
-
+        if (project.getPath().equals(":")) {
+            var update = register(project, "depLensInteractiveUpdate", DepLensUpdateTask.class, "Interactively select updates and edit their version sources", "depLensInteractiveUpdate");
+            update.configure(t -> t.getTerminal().convention(project.getProviders().environmentVariable("DEPLENS_TTY")));
+        }
     }
 
     /**

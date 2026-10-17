@@ -1,0 +1,4 @@
+#!/bin/sh
+# Run from the consuming build's root directory. Arguments are forwarded to Gradle.
+set -eu
+exec ./gradlew depLensInteractiveUpdate "$@"

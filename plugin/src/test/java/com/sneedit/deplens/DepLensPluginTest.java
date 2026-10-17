@@ -48,6 +48,7 @@ class DepLensPluginTest {
         assertThat(project.getTasks().findByName("depLensCheckGradle")).isNotNull();
         assertThat(project.getTasks().findByName("depLensCheck")).isInstanceOf(com.sneedit.deplens.tasks.CheckUpdatesTask.class);
         assertThat(project.getTasks().findByName("depLensInventory")).isNotNull();
+        assertThat(project.getTasks().findByName("depLensInteractiveUpdate")).isNotNull();
         assertThat(project.getTasks().getNames()).doesNotContain("checkUpdates", "checkDependencyUpdates",
                 "checkPluginUpdates", "checkGradleUpdates", "depLensUpdate");
     }

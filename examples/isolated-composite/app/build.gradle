@@ -1,0 +1,12 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    maven { url = uri('../build/fixture-repository') }
+}
+
+dependencies {
+    implementation project(':lib')
+    implementation 'com.example:demo-library:1.0.0'
+}

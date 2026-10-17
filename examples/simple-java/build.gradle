@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+    id 'com.sneedit.deplens' version '0.1.0-SNAPSHOT'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:31.0-jre'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
+}
+
+depLens {
+    rules {
+        global { includePreReleases = false; allowedUpdates = 'major' }
+        dependency('com.google.guava:guava') { pinned = true }
+        dependency('org.slf4j:slf4j-api') { allowedUpdates = 'minor' }
+    }
+}
+
+test {
+    useJUnitPlatform()
+}

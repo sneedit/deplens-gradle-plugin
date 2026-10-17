@@ -1,0 +1,12 @@
+pluginManagement {
+    includeBuild('../..')
+}
+
+plugins {
+    id 'com.sneedit.deplens.settings'
+}
+
+rootProject.name = 'isolated-composite'
+include 'app', 'lib'
+includeBuild 'included-one'
+includeBuild 'included-two'

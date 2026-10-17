@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+    id 'com.sneedit.deplens' version '0.1.0-SNAPSHOT'
+}
+
+allprojects {
+    group = 'com.example'
+    version = '1.0.0'
+    
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'com.sneedit.deplens'
+    
+    depLens {
+        dependencies { includePreReleases = false }
+    }
+}
+
+// Root rules also apply to subprojects and separate builds.
+depLens {
+    rules {
+        global { includePreReleases = false }
+        project(':app') { allowedUpdates = 'minor' }
+    }
+}

@@ -5,7 +5,7 @@
 
 /**
  * Coordinates update checks without teaching DepLens a second dependency resolver.
- * Module checks are delegated
+ * Start at {@link com.sneedit.deplens.updates.UpdateEngine}: it delegates module checks
  * to ModuleUpdateChecker and wrapper checks to GradleReleaseChecker. UpdateResolutionContexts
  * owns lazy resolver scopes; BuildContextResolver prepares candidate graphs and
  * VersionListingPrefetcher groups independent listings. UpdateResults

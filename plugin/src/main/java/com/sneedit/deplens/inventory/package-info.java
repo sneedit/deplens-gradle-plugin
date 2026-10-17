@@ -5,6 +5,7 @@
 
 /**
  * Collects declared components, their source locations and Gradle's resolution evidence.
+ * Start at {@link com.sneedit.deplens.inventory.InventoryCollector}.
  * ConfigurationInventoryCollector handles configuration declarations and graph evidence. SourceIndex handles
  * attribution, SourceText handles offset-preserving scans, and BuildFilesInventory
  * reads wrapper and catalog files. PluginVersionInheritance reconciles captured plugin records.

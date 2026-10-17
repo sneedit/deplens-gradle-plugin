@@ -2,6 +2,15 @@
 
 Notable changes, generated from Conventional Commits by [git-cliff](https://git-cliff.org/).
 
+## Unreleased
+
+[Compare changes](https://github.com/sneedit/deplens-gradle-plugin/compare/v0.1.0...HEAD)
+
+### Dependency updates
+
+- **deps:** Bump com.google.errorprone:error_prone_core ([#1](https://github.com/sneedit/deplens-gradle-plugin/issues/1)) ([825d8fc](https://github.com/sneedit/deplens-gradle-plugin/commit/825d8fcc719bdbecca19fe84e89477fbcd1571d2))
+- **deps:** Bump org.tomlj:tomlj from 1.1.1 to 2.2.0 ([#3](https://github.com/sneedit/deplens-gradle-plugin/issues/3)) ([3f5756f](https://github.com/sneedit/deplens-gradle-plugin/commit/3f5756f1e56757c4e97846e4ea173c31dd2b8462))
+
 ## [v0.1.0](https://github.com/sneedit/deplens-gradle-plugin/releases/tag/v0.1.0) - 2026-10-17
 
 ### Features

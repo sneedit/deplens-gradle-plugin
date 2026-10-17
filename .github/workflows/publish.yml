@@ -77,13 +77,13 @@ jobs:
       - name: Verify and package signed Central bundle
         run: python3 scripts/publish-central.py bundle plugin/build/central-staging --version "$RELEASE_VERSION" --output build/central-bundle.zip
       - name: Retain signed Central bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: central-bundle
           path: build/central-bundle.zip
           if-no-files-found: error
       - name: Retain release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: published-plugin
           path: plugin/build/libs/*.jar
@@ -109,7 +109,7 @@ jobs:
         run: python3 scripts/publish-central.py publish build/central-bundle.zip --version "$RELEASE_VERSION" --result build/central-publication.json
       - name: Retain Central deployment status
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: central-publication-status
           path: build/central-publication.json

@@ -134,7 +134,7 @@ jobs:
             examples/isolated-composite/build/reports/configuration-cache/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           files: ./plugin/build/reports/jacoco/test/jacocoTestReport.xml
           flags: unittests

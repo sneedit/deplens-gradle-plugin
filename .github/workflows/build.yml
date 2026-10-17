@@ -1,0 +1,222 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      release-version:
+        description: Release candidate used only for local artifact verification
+        type: string
+        default: '0.1.0'
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+# Set this repository variable to "yes" only after accepting the public service terms.
+env:
+  DEVELOCITY_TERMS_OF_USE_AGREE: ${{ vars.DEVELOCITY_TERMS_OF_USE_AGREE }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Test (Gradle ${{ matrix.gradle }}, Java ${{ matrix.java }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - gradle: '8.8'
+            java: '21'
+          - gradle: '8.14'
+            java: '21'
+          - gradle: '9.8.1'
+            java: '21'
+          - gradle: '9.8.1'
+            java: '25'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up compiler JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle ${{ matrix.gradle }}
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ matrix.gradle }}
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        id: build
+        run: gradle build --configuration-cache --configuration-cache-problems=fail -PtestJavaVersion=${{ matrix.java }} -PtestGradleVersion=${{ matrix.gradle }} -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME --no-daemon --stacktrace
+
+      - name: Reuse build configuration
+        run: gradle build --configuration-cache --configuration-cache-problems=fail -PtestJavaVersion=${{ matrix.java }} -PtestGradleVersion=${{ matrix.gradle }} -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME --no-daemon --stacktrace
+
+      - name: Summarize test results
+        if: always()
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: python3 scripts/ci-report.py tests plugin/build/test-results/test --outcome "$BUILD_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Test interactive console in a real terminal
+        run: python3 scripts/test-console.py "$(command -v gradle)"
+
+      - name: Test Configuration Cache console
+        run: python3 scripts/test-console.py "$(command -v gradle)" --configuration-cache --configuration-cache-problems=fail
+
+      - name: Test isolated Configuration Cache console
+        env:
+          ISOLATION_PROPERTY: ${{ matrix.gradle == '9.8.1' && 'org.gradle.isolated-projects' || 'org.gradle.unsafe.isolated-projects' }}
+        run: python3 scripts/test-console.py "$(command -v gradle)" --configuration-cache --configuration-cache-problems=fail "-D$ISOLATION_PROPERTY=true"
+
+      - name: Validate isolated project configuration twice
+        env:
+          ISOLATION_PROPERTY: ${{ matrix.gradle == '9.8.1' && 'org.gradle.isolated-projects' || 'org.gradle.unsafe.isolated-projects' }}
+        run: |
+          gradle :plugin:validatePlugins --configuration-cache --configuration-cache-problems=fail "-D$ISOLATION_PROPERTY=true" --no-daemon
+          gradle :plugin:validatePlugins --configuration-cache --configuration-cache-problems=fail "-D$ISOLATION_PROPERTY=true" --no-daemon
+
+      - name: Test isolated composite and compare cached results
+        run: python3 scripts/test-isolated-example.py "$(command -v gradle)" --gradle-version '${{ matrix.gradle }}'
+
+      - name: Verify packaged release artifacts and both plugin IDs locally
+        env:
+          RELEASE_VERSION: ${{ inputs.release-version || '0.1.0' }}
+        run: python3 scripts/test-release.py "$(command -v gradle)" --version "$RELEASE_VERSION"
+
+      - name: Verify signed Maven Central bundle locally
+        if: matrix.java == '21'
+        run: python3 scripts/test-central-signing.py "$(command -v gradle)"
+
+      - name: Upload local Central signing diagnostics
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == '21'
+        with:
+          name: central-signing-gradle-${{ matrix.gradle }}-java-${{ matrix.java }}
+          path: |
+            build/central-verification/**/*.log
+            build/central-verification/**/central-bundle.zip
+
+      - name: Upload local release verification diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-verification-gradle-${{ matrix.gradle }}-java-${{ matrix.java }}
+          path: build/release-verification/
+
+      - name: Upload isolated composite diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-composite-gradle-${{ matrix.gradle }}-java-${{ matrix.java }}
+          path: |
+            examples/isolated-composite/build/isolation-ci/*.log
+            examples/isolated-composite/build/isolation-ci/*.json
+            examples/isolated-composite/build/reports/configuration-cache/
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./plugin/build/reports/jacoco/test/jacocoTestReport.xml
+          flags: unittests
+          name: codecov-gradle-${{ matrix.gradle }}-java-${{ matrix.java }}
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-gradle-${{ matrix.gradle }}-java-${{ matrix.java }}
+          path: |
+            **/build/test-results/test/TEST-*.xml
+            **/build/reports/tests/test/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.gradle == '8.8' && matrix.java == '21'
+        with:
+          name: plugin-jar
+          path: plugin/build/libs/*.jar
+
+  test-examples:
+    name: Test Example Projects
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build plugin locally
+        run: ./gradlew publishToMavenLocal --no-daemon
+
+      - name: Test simple-java example
+        working-directory: examples/simple-java
+        run: |
+          ../../gradlew :depLensInventory :depLensCheckDependencies --no-daemon --stacktrace
+          echo "Simple Java example completed"
+
+      - name: Test multi-module example
+        working-directory: examples/multi-module
+        run: |
+          ../../gradlew :depLensInventory :depLensCheckDependencies --no-daemon --stacktrace
+          echo "Multi-module example completed"
+
+      - name: Test kotlin-dsl example
+        working-directory: examples/kotlin-dsl
+        run: |
+          ../../gradlew :depLensInventory :depLensCheckDependencies --no-daemon --stacktrace
+          echo "Kotlin DSL example completed"
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run code quality checks
+        run: ./gradlew check --no-daemon

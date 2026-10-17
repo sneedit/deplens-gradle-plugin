@@ -1,0 +1,135 @@
+name: Publish to Maven Central and Gradle Plugin Portal
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+    secrets:
+      GRADLE_PUBLISH_KEY:
+        required: true
+      GRADLE_PUBLISH_SECRET:
+        required: true
+      MAVEN_CENTRAL_USERNAME:
+        required: true
+      MAVEN_CENTRAL_PASSWORD:
+        required: true
+      SIGNING_KEY:
+        required: true
+      SIGNING_PASSWORD:
+        required: true
+
+permissions:
+  contents: read
+
+# Publication jobs must not upload build telemetry containing publication inputs.
+env:
+  DEVELOCITY_TERMS_OF_USE_AGREE: ''
+
+jobs:
+  prepare:
+    name: Build, Validate and Sign Release
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check required publication secrets
+        env:
+          GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+          GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import os
+          names = ('GRADLE_PUBLISH_KEY', 'GRADLE_PUBLISH_SECRET', 'MAVEN_CENTRAL_USERNAME',
+                   'MAVEN_CENTRAL_PASSWORD', 'SIGNING_KEY', 'SIGNING_PASSWORD')
+          missing = [name for name in names if not os.environ.get(name)]
+          if missing:
+              raise SystemExit('Missing publication secrets: ' + ', '.join(missing))
+          PY
+      - name: Validate release version
+        run: python3 scripts/release-version.py "$RELEASE_VERSION"
+      - name: Build and test
+        id: build
+        run: ./gradlew build -Pversion="$RELEASE_VERSION" -PrepositoryUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --no-scan --no-daemon --stacktrace
+      - name: Summarize tests
+        if: always()
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: python3 scripts/ci-report.py tests plugin/build/test-results/test --outcome "$BUILD_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+      - name: Validate release metadata locally
+        run: ./gradlew :plugin:validateRelease -Pversion="$RELEASE_VERSION" -PrepositoryUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --no-scan --no-daemon
+      - name: Stage signed publications locally
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+        run: ./gradlew :plugin:publishAllPublicationsToCentralStagingRepository -Pversion="$RELEASE_VERSION" -PrepositoryUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" -PsignPublications=true --no-scan --no-configuration-cache --no-daemon
+      - name: Verify and package signed Central bundle
+        run: python3 scripts/publish-central.py bundle plugin/build/central-staging --version "$RELEASE_VERSION" --output build/central-bundle.zip
+      - name: Retain signed Central bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-bundle
+          path: build/central-bundle.zip
+          if-no-files-found: error
+      - name: Retain release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-plugin
+          path: plugin/build/libs/*.jar
+          if-no-files-found: error
+
+  central:
+    name: Publish to Maven Central
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: central-bundle
+          path: build
+      - name: Publish and wait for Maven Central availability
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+        run: python3 scripts/publish-central.py publish build/central-bundle.zip --version "$RELEASE_VERSION" --result build/central-publication.json
+      - name: Retain Central deployment status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-publication-status
+          path: build/central-publication.json
+          if-no-files-found: warn
+
+  plugin-portal:
+    name: Publish to Gradle Plugin Portal
+    needs: prepare
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Publish to Gradle Plugin Portal
+        env:
+          GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+          GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+        run: ./gradlew :plugin:publishPlugins -Pversion="$RELEASE_VERSION" -PrepositoryUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --no-scan --no-daemon --stacktrace

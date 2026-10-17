@@ -1,3 +1,49 @@
+plugins {
+    id 'com.gradle.develocity' version '4.6.0' apply false
+}
+
+// The development checkout can also be consumed as an included plugin build.
+if (gradle.parent == null) {
+    apply plugin: 'com.gradle.develocity'
+
+    def ci = providers.environmentVariable('GITHUB_ACTIONS').getOrElse('false') == 'true'
+    def termsAccepted = providers.environmentVariable('DEVELOCITY_TERMS_OF_USE_AGREE').getOrElse('') == 'yes'
+    def publishCiScans = ci && termsAccepted
+    def workflow = providers.environmentVariable('GITHUB_WORKFLOW').getOrElse('')
+    def job = providers.environmentVariable('GITHUB_JOB').getOrElse('')
+    def attempt = providers.environmentVariable('GITHUB_RUN_ATTEMPT').getOrElse('')
+    def server = providers.environmentVariable('GITHUB_SERVER_URL').getOrElse('https://github.com')
+    def repository = providers.environmentVariable('GITHUB_REPOSITORY').getOrElse('')
+    def runId = providers.environmentVariable('GITHUB_RUN_ID').getOrElse('')
+
+    develocity {
+        buildScan {
+            termsOfUseUrl = 'https://gradle.com/help/legal-terms-of-use'
+            if (termsAccepted) {
+                termsOfUseAgree = 'yes'
+            }
+            publishing.onlyIf { publishCiScans }
+            uploadInBackground = !ci
+            tag 'DepLens'
+            if (ci) {
+                tag 'CI'
+                if (workflow) value 'GitHub workflow', workflow
+                if (job) value 'GitHub job', job
+                if (attempt) value 'GitHub run attempt', attempt
+                if (repository && runId) {
+                    link 'GitHub Actions', "${server}/${repository}/actions/runs/${runId}"
+                }
+            }
+            obfuscation {
+                username { ignored -> 'redacted' }
+                hostname { ignored -> 'redacted' }
+                ipAddresses { addresses -> addresses.collect { ignored -> '0.0.0.0' } }
+                externalProcessName { ignored -> 'non-build-process' }
+            }
+        }
+    }
+}
+
 rootProject.name = 'deplens-gradle-plugin'
 include 'plugin'
 

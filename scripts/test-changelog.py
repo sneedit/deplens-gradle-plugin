@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""Verify changelog behavior using a temporary Git history and a real git-cliff."""
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+
+def verify(executable):
+    binary = shutil.which(executable)
+    if binary is None:
+        raise SystemExit('git-cliff executable not found: ' + executable)
+    config = Path(__file__).resolve().parents[1] / 'cliff.toml'
+    with tempfile.TemporaryDirectory(prefix='deplens-changelog-') as directory:
+        env = dict(os.environ, GIT_AUTHOR_NAME='Changelog Test',
+                   GIT_AUTHOR_EMAIL='test@example.invalid',
+                   GIT_COMMITTER_NAME='Changelog Test',
+                   GIT_COMMITTER_EMAIL='test@example.invalid')
+
+        def run(*args):
+            return subprocess.check_output(args, cwd=directory, env=env, text=True)
+
+        def commit(message):
+            run('git', 'commit', '--allow-empty', '-m', message)
+
+        run('git', 'init', '-b', 'main')
+        commit('Initial commit')
+        commit('feat: historical feature')
+        run('git', 'tag', 'v0.1.0')
+        commit('fix: handle missing versions (#42)')
+        commit('perf: reduce resolution overhead')
+        commit('build(deps): bump library to 2.0')
+        commit('chore(deps): bump another library')
+        commit('ci(deps): bump actions/checkout')
+        commit('docs: update generated changelog')
+        commit('refactor: internal cleanup')
+        commit('test: extend coverage')
+        commit('feat(api)!: replace old API')
+        commit('chore: migrate configuration\n\nBREAKING CHANGE: Use the new DSL.')
+        run('git', 'checkout', '-b', 'feature')
+        commit('feat: merged feature')
+        run('git', 'checkout', 'main')
+        run('git', 'merge', '--no-ff', 'feature', '-m',
+            'Merge pull request #43 from example/feature')
+        # Prerelease tags must not split the stable release history.
+        run('git', 'tag', 'v0.2.0-rc.1')
+        commit('feat: squash feature (#44)')
+
+        def generate():
+            return run(binary, '--config', str(config))
+
+        text = generate()
+        assert text == generate(), 'Changelog generation must be deterministic'
+        assert '## Unreleased' in text
+        assert '## [v0.1.0]' in text
+        assert 'v0.1.0...HEAD' in text
+        assert text.index('Squash feature') < text.index('## [v0.1.0]')
+        assert text.index('Historical feature') > text.index('## [v0.1.0]')
+        for section in ('Breaking changes', 'Features', 'Bug fixes', 'Performance',
+                        'Dependency updates'):
+            assert '### ' + section in text, section
+        for entry in ('Bump library to 2.0', 'Bump another library',
+                      'Replace old API', 'Use the new DSL.',
+                      'Handle missing versions', 'Merged feature'):
+            assert text.count(entry) == 1, entry
+        assert '[#42](https://github.com/sneedit/deplens-gradle-plugin/issues/42)' in text
+        for excluded in ('actions/checkout', 'generated changelog', 'Internal cleanup',
+                         'Extend coverage', 'Merge pull request', 'Initial commit',
+                         'v0.2.0-rc.1'):
+            assert excluded not in text, excluded
+        breaking = text.split('### Breaking changes\n', 1)[1].split('\n### ', 1)[0]
+        assert 'Replace old API' in breaking and 'Use the new DSL.' in breaking, text
+        run('git', 'tag', 'v0.2.0')
+        released = generate()
+        assert '## [v0.2.0]' in released
+        assert 'v0.1.0...v0.2.0' in released
+    print('Changelog history, releases, PRs, dependency updates and filters verified.')
+
+
+if __name__ == '__main__':
+    verify(sys.argv[1] if len(sys.argv) > 1 else 'git-cliff')

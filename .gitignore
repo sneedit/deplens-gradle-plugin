@@ -1,7 +1,3 @@
-# Changelog generator
-.bundle/
-vendor/bundle/
-
 # Gradle
 .gradle
 build/

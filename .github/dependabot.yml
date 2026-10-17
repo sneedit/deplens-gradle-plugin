@@ -1,18 +1,12 @@
 version: 2
 updates:
-  # Changelog generator
-  - package-ecosystem: "bundler"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
-
   # Gradle dependencies
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "build(deps)"
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -23,6 +17,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "ci(deps)"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"

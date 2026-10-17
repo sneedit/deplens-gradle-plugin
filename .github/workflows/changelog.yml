@@ -4,12 +4,8 @@ on:
   push:
     branches: [main]
     paths-ignore: [CHANGELOG.md]
-  issues:
-    types: [closed, reopened, edited, labeled, unlabeled, milestoned, demilestoned, deleted]
   release:
     types: [published, edited, deleted]
-  schedule:
-    - cron: '23 4 * * *'
   workflow_dispatch:
   workflow_call:
 
@@ -27,21 +23,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      issues: read
-      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
-      - uses: ruby/setup-ruby@v1
+      - name: Generate changelog from the complete commit history
+        uses: orhun/git-cliff-action@v4
         with:
-          ruby-version: '3.4'
-          bundler-cache: true
-      - name: Generate changelog from release tags, closed issues and merged pull requests
-        env:
-          CHANGELOG_GITHUB_TOKEN: ${{ github.token }}
-        run: bundle exec github_changelog_generator
+          version: v2.14.2
+          config: cliff.toml
+          args: --output CHANGELOG.md
+      - name: Verify changelog rules against a temporary Git history
+        run: python3 scripts/test-changelog.py "$RUNNER_TEMP/git-cliff/bin/git-cliff"
       - name: Commit changelog when changed
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}

@@ -45,7 +45,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build
-        run: ./gradlew build -x test --no-daemon
+        # CodeQL must observe compilation instead of reusing cached task outputs.
+        run: ./gradlew build -x test --no-build-cache --rerun-tasks --no-configuration-cache --no-daemon
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

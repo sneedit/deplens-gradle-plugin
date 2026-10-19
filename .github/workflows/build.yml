@@ -57,7 +57,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle ${{ matrix.gradle }}
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: ${{ matrix.gradle }}
 
@@ -178,7 +178,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Build plugin locally
         run: ./gradlew publishToMavenLocal --no-daemon
@@ -216,7 +216,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Run code quality checks
         run: ./gradlew check --no-daemon

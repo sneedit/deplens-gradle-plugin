@@ -39,7 +39,7 @@ jobs:
         with:
           java-version: '21'
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
       - name: Check required publication secrets
         env:
           GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
@@ -127,7 +127,7 @@ jobs:
         with:
           java-version: '21'
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
       - name: Publish to Gradle Plugin Portal
         env:
           GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}

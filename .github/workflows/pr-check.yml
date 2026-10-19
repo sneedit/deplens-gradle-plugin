@@ -21,7 +21,7 @@ jobs:
         with:
           java-version: '21'
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
       - name: Test CI reporting and release version validation
         run: python3 scripts/test-ci.py
       - name: Check production nullness contracts

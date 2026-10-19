@@ -18,9 +18,21 @@ import java.util.Objects;
  * Settings values shared with isolated project callbacks; contains no live settings model.
  */
 public final class SettingsModel {
+    /**
+     * Dependency and plugin repositories captured from settings, in declaration order.
+     */
     public List<RepositorySpec> repositories, pluginRepositories;
+    /**
+     * Settings dependency configurations indexed by name.
+     */
     public Map<String, ConfigurationSpec> configurations = new LinkedHashMap<>();
+    /**
+     * Plugin management default versions indexed by plugin ID.
+     */
     public Map<String, String> pluginVersions = new LinkedHashMap<>();
+    /**
+     * Dependency repository preference mode selected in settings.
+     */
     public String repositoryMode;
 
     /**

@@ -20,6 +20,10 @@ import java.util.function.Predicate;
  * Optional Spring integration; no Spring classes are linked or loaded unless its plugin is applied.
  */
 public final class SpringDependencyManagementAdapter implements DependencyManagementIntegration {
+    /** Creates an adapter for the optional Spring dependency-management plugin. */
+    public SpringDependencyManagementAdapter() {
+    }
+
     /**
      * Checks whether Spring's dependency management plugin is applied.
      *

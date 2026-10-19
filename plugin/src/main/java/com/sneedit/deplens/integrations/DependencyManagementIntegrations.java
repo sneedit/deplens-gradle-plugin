@@ -41,6 +41,12 @@ public final class DependencyManagementIntegrations {
 
     /**
      * Passes the checked scope to integrations that may otherwise resolve additional configurations.
+     *
+     * @param project project whose available integrations are consulted
+     * @param entries entries receiving management origins and overrides
+     * @param platforms callback for registering integration-discovered BOMs
+     * @param report report receiving integration warnings and evidence
+     * @param selectedConfiguration predicate selecting configurations eligible for resolution
      */
     public static void collect(Project project, Collection<InventoryEntry> entries,
                                DependencyManagementIntegration.PlatformRegistrar platforms, BuildInventory report,

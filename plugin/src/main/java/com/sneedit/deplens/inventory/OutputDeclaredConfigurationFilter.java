@@ -16,6 +16,14 @@ public final class OutputDeclaredConfigurationFilter {
     private OutputDeclaredConfigurationFilter() {
     }
 
+    /**
+     * Builds a presentation view without discarding full-scope completeness information.
+     *
+     * @param source complete inventory or check report
+     * @param includes regexes selecting declared configuration names
+     * @param excludes regexes hiding declared configuration names
+     * @return the source report when unfiltered, otherwise its filtered view
+     */
     public static BuildInventory apply(BuildInventory source, List<String> includes, List<String> excludes) {
         Predicate<String> selected = ConfigurationFilter.predicate("outputDeclaredConfigurationFilter", includes, excludes);
         if (includes.isEmpty() && excludes.isEmpty()) return source;

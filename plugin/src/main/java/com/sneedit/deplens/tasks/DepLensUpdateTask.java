@@ -23,6 +23,10 @@ import java.nio.file.Files;
  */
 @DisableCachingByDefault(because = "Interactive decisions and source mutations must always run")
 public abstract class DepLensUpdateTask extends CheckUpdatesTask {
+    /** Creates an interactive update task using the aggregated check report. */
+    public DepLensUpdateTask() {
+    }
+
     /**
      * Optionally overrides the automatically detected terminal device.
      *
@@ -31,9 +35,19 @@ public abstract class DepLensUpdateTask extends CheckUpdatesTask {
     @Internal
     public abstract Property<String> getTerminal();
 
+    /**
+     * Provides Gradle request metadata for interactive client detection.
+     *
+     * @return injected metadata for the current build request
+     */
     @javax.inject.Inject
     protected abstract org.gradle.initialization.BuildRequestMetaData getBuildRequest();
 
+    /**
+     * Provides Gradle output events used while the interactive console owns the terminal.
+     *
+     * @return injected output event listener
+     */
     @javax.inject.Inject
     protected abstract org.gradle.internal.logging.events.OutputEventListener getOutputEvents();
 

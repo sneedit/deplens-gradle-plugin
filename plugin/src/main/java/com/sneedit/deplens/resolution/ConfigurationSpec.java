@@ -17,6 +17,9 @@ import java.util.*;
  * Values needed to reconstruct a query configuration in a detached Gradle resolver.
  */
 public final class ConfigurationSpec {
+    /**
+     * Original configuration name used to restore its resolution context.
+     */
     public final String name;
 
     /**
@@ -26,16 +29,49 @@ public final class ConfigurationSpec {
         this.name = name;
     }
 
+    /**
+     * Whether the original configuration can be resolved.
+     */
     public boolean resolvable;
+    /**
+     * Detached dependency resolution actions, in execution order.
+     */
     public List<org.gradle.api.Action<? super DependencyResolveDetails>> dependencyRules = new ArrayList<>();
+    /**
+     * Detached component selection rules, including their input specifications.
+     */
     public List<org.gradle.internal.rules.SpecRuleAction<? super ComponentSelection>> selectionRules = new ArrayList<>();
+    /**
+     * Handles to stateful rules retained by the invocation-local service.
+     */
     public List<ResolutionRules.Handle> invocationRules = new ArrayList<>();
+    /**
+     * Consumer attributes used for variant selection.
+     */
     public Map<AttributeSpec, Object> attributes = new LinkedHashMap<>();
+    /**
+     * Declared dependencies, including inherited declarations.
+     */
     public List<Module> dependencies = new ArrayList<>();
+    /**
+     * Dependency constraints applied to the reconstructed graph.
+     */
     public List<Module> constraints = new ArrayList<>();
+    /**
+     * Forced module selectors from the original resolution strategy.
+     */
     public List<String> forced = new ArrayList<>();
+    /**
+     * Group and module exclusions applied to this configuration.
+     */
     public Set<Map<String, String>> excludes = new LinkedHashSet<>();
+    /**
+     * Currently selected versions indexed by module coordinate.
+     */
     public Map<String, String> managed = new LinkedHashMap<>();
+    /**
+     * Versions supplied by dependency-management integrations, indexed by module coordinate.
+     */
     public Map<String, String> integrationManaged = new LinkedHashMap<>();
 
     /**

@@ -47,6 +47,10 @@ public final class ResolutionFailureDetails {
 
     /**
      * Identifies the failed module and explains its structured failure, including JVM/format mismatches.
+     *
+     * @param configuration consumer configuration that could not resolve the dependency
+     * @param edge unresolved graph edge containing the attempted selector and failure
+     * @return credential-safe resolution failure with structured cause information
      */
     public static ResolutionFailure describe(String configuration, UnresolvedDependencyResult edge) {
         String dependency = edge.getAttempted() instanceof ModuleComponentSelector module
@@ -57,6 +61,11 @@ public final class ResolutionFailureDetails {
 
     /**
      * Also describes repository exceptions raised before an unresolved graph edge is available.
+     *
+     * @param configuration consumer configuration that could not resolve the dependency
+     * @param dependency coordinate or selector that failed to resolve
+     * @param failure resolution failure to summarize without exposing credentials
+     * @return credential-safe resolution failure with structured cause information
      */
     public static ResolutionFailure describe(String configuration, String dependency, Throwable failure) {
         String httpFailures = httpFailures(failure);

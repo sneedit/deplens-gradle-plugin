@@ -13,6 +13,10 @@ import org.gradle.work.DisableCachingByDefault;
  */
 @DisableCachingByDefault(because = "Update checks observe live repository state")
 public abstract class CheckUpdatesTask extends DepLensCheckTask {
+    /** Creates an update-check task covering every supported component type. */
+    public CheckUpdatesTask() {
+    }
+
     /**
      * Selects dependencies, platforms, constraints, plugins and the wrapper for this check.
      *

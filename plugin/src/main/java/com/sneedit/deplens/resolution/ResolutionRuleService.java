@@ -18,6 +18,10 @@ import java.util.function.Function;
  * Original resolution rules retained only for the current build invocation.
  */
 public abstract class ResolutionRuleService implements BuildService<BuildServiceParameters.None>, AutoCloseable {
+    /** Creates an invocation-local registry for stateful resolution rules. */
+    public ResolutionRuleService() {
+    }
+
     private record Entry(Object rule, @Nullable ProjectState owner) {
     }
 

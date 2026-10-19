@@ -19,16 +19,23 @@ import java.util.regex.PatternSyntaxException;
 public abstract class ConfigurationFilter {
     /**
      * Full-name Java regular expressions; an empty list accepts every name.
+     *
+     * @return include regexes; an empty list includes every configuration
      */
     @Input
     public abstract ListProperty<String> getIncludes();
 
     /**
      * Full-name Java regular expressions rejected even when an include matches.
+     *
+     * @return exclude regexes, which take precedence over include patterns
      */
     @Input
     public abstract ListProperty<String> getExcludes();
 
+    /**
+     * Creates a filter with no inclusion or exclusion restrictions.
+     */
     @Inject
     public ConfigurationFilter() {
         getIncludes().convention(List.of());
@@ -37,6 +44,11 @@ public abstract class ConfigurationFilter {
 
     /**
      * Compiles detached values, without retaining Gradle objects or build-script closures.
+     *
+     * @param field DSL field name used in invalid-pattern diagnostics
+     * @param includes include regexes; an empty list accepts every configuration
+     * @param excludes exclude regexes applied after inclusion
+     * @return predicate accepting included names that match no exclusion
      */
     public static Predicate<String> predicate(String field, List<String> includes, List<String> excludes) {
         List<Pattern> accepted = compile(field + ".includes", includes);

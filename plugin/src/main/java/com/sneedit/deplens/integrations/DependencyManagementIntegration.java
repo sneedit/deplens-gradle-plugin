@@ -52,6 +52,12 @@ public interface DependencyManagementIntegration {
 
     /**
      * Contributes evidence without resolving configurations outside the selected scope.
+     *
+     * @param project project providing the dependency-management integration
+     * @param entries entries receiving management origins and overrides
+     * @param platforms callback for registering integration-discovered BOMs
+     * @param report report receiving integration warnings and evidence
+     * @param selectedConfiguration predicate selecting configurations eligible for resolution
      */
     default void collect(Project project, Collection<InventoryEntry> entries, PlatformRegistrar platforms,
                          BuildInventory report, java.util.function.Predicate<String> selectedConfiguration) {

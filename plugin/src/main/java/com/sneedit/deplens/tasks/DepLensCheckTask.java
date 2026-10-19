@@ -22,20 +22,42 @@ import java.util.Set;
  */
 @DisableCachingByDefault(because = "Update checks observe live repository state")
 public abstract class DepLensCheckTask extends DepLensInventoryTask {
+    /**
+     * Provides reports produced by independent per-project checks.
+     *
+     * @return partial JSON report files to merge
+     */
     @InputFiles
     @PathSensitive(PathSensitivity.NONE)
     public abstract ConfigurableFileCollection getPartialReports();
 
+    /**
+     * Provides the query cache service shared by the participating checks.
+     *
+     * @return invocation-local query service property
+     */
     @Internal
     public abstract Property<CheckQueryService> getQueryService();
 
+    /**
+     * Controls whether update checks skip full consumer-graph validation.
+     *
+     * @return fast-check mode property
+     */
     @Input
     public abstract Property<Boolean> getFastCheck();
 
-    /** Opt-in failure policy for the full aggregated check report, before output filtering. */
+    /**
+     * Opt-in failure policy for the full aggregated check report, before output filtering.
+     *
+     * @return whether an incomplete aggregated check should fail the task
+     */
     @Input
     public abstract Property<Boolean> getFailIfChecksIncomplete();
 
+    /**
+     * Initializes full graph checking and leaves incomplete-check failure opt-in.
+     */
     public DepLensCheckTask() {
         getFastCheck().convention(false);
         getFailIfChecksIncomplete().convention(false);
@@ -43,6 +65,8 @@ public abstract class DepLensCheckTask extends DepLensInventoryTask {
 
     /**
      * Skips candidate graph checks for this invocation, including included builds.
+     *
+     * @param fast true to skip consumer-graph candidate checks
      */
     @Option(option = "fast", description = "Discover updates without full build-context checks")
     public void setFast(boolean fast) {

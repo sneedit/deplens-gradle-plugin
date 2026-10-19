@@ -43,12 +43,29 @@ public class UpdateRules {
      * @param versionPattern         custom numeric version pattern, or null
      * @param preReleasePattern      custom prerelease detector, or null
      * @param ignoredVersionPatterns optional version exclusion regexes
+     *
+     * @param versionNormalizationPattern regex transforming comparison keys, or null
+     * @param versionNormalizationReplacement normalization replacement, or null
      */
     public record Spec(String scope, String key, @Nullable Boolean pinned, @Nullable Boolean preReleases,
                        @Nullable String allowedUpdates, @Nullable List<String> ignored, @Nullable String versionPattern,
                        @Nullable String preReleasePattern, @Nullable String versionNormalizationPattern,
                        @Nullable String versionNormalizationReplacement,
                        @Nullable List<String> ignoredVersionPatterns) {
+        /**
+         * Creates a rule snapshot without regex-based version exclusions.
+         *
+         * @param scope rule scope
+         * @param key scope-specific lookup key
+         * @param pinned optional current-version protection override
+         * @param preReleases optional prerelease acceptance override
+         * @param allowedUpdates optional highest allowed update tier
+         * @param ignored optional exact versions to ignore
+         * @param versionPattern custom numeric version pattern, or null
+         * @param preReleasePattern custom prerelease detector, or null
+         * @param versionNormalizationPattern normalization regex, or null
+         * @param versionNormalizationReplacement normalization replacement, or null
+         */
         public Spec(String scope, String key, @Nullable Boolean pinned, @Nullable Boolean preReleases,
                     @Nullable String allowedUpdates, @Nullable List<String> ignored, @Nullable String versionPattern,
                     @Nullable String preReleasePattern, @Nullable String versionNormalizationPattern,
@@ -57,6 +74,18 @@ public class UpdateRules {
                     versionNormalizationPattern, versionNormalizationReplacement, null);
         }
 
+        /**
+         * Creates a legacy rule snapshot without comparison normalization or regex exclusions.
+         *
+         * @param scope rule scope
+         * @param key scope-specific lookup key
+         * @param pinned optional current-version protection override
+         * @param preReleases optional prerelease acceptance override
+         * @param allowedUpdates optional highest allowed update tier
+         * @param ignored optional exact versions to ignore
+         * @param versionPattern custom numeric version pattern, or null
+         * @param preReleasePattern custom prerelease detector, or null
+         */
         public Spec(String scope, String key, @Nullable Boolean pinned, @Nullable Boolean preReleases,
                     @Nullable String allowedUpdates, @Nullable List<String> ignored, @Nullable String versionPattern,
                     @Nullable String preReleasePattern) {

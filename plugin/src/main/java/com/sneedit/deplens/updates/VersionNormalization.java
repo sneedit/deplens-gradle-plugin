@@ -12,10 +12,17 @@ import java.util.regex.Pattern;
 
 /**
  * Transforms comparison keys only; original versions remain repository selectors and report values.
+ *
+ * @param pattern regex applied to each version before comparison
+ * @param replacement Java regex replacement used to produce comparison keys
  */
 public record VersionNormalization(Pattern pattern, String replacement) implements Comparator<String> {
     /**
      * Validates Java replacement references before any repository queries run.
+     *
+     * @param expression normalization regex
+     * @param replacement Java regex replacement, including any group references
+     * @return validated normalization rule
      */
     public static VersionNormalization compile(String expression, String replacement) {
         Pattern pattern = VersionPatterns.compile("versionNormalizationPattern", expression);
@@ -46,6 +53,13 @@ public record VersionNormalization(Pattern pattern, String replacement) implemen
         return new VersionNormalization(pattern, replacement);
     }
 
+    /**
+     * Transforms a version into a nonblank comparison key.
+     *
+     * @param version original repository version string
+     * @return normalized comparison key
+     * @throws IllegalArgumentException if normalization produces a blank key
+     */
     public String normalize(String version) {
         String result = pattern.matcher(version).replaceAll(replacement);
         if (result.isBlank())
@@ -60,6 +74,10 @@ public record VersionNormalization(Pattern pattern, String replacement) implemen
 
     /**
      * Restores the comparator from additive report fields; older reports retain Gradle ordering.
+     *
+     * @param expression normalization regex, or null for Gradle ordering
+     * @param replacement normalization replacement, or null for Gradle ordering
+     * @return configured normalization comparator, or the default Gradle comparator
      */
     public static Comparator<String> comparator(@Nullable String expression, @Nullable String replacement) {
         return expression == null || replacement == null ? Versions::compare : compile(expression, replacement);

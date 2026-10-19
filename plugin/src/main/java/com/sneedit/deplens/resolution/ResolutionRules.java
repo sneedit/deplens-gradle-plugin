@@ -32,12 +32,19 @@ public final class ResolutionRules {
 
     /**
      * Only handles, never original rule objects, cross the analysis model boundary.
+     *
+     * @param service invocation-local registry retaining original rule objects
+     * @param key registry key identifying the retained rule
+     * @param implementation original rule implementation class name
      */
     public record Handle(Provider<ResolutionRuleService> service, String key, String implementation) {
     }
 
     /**
      * Configuration-phase owner of rules contributed by a project or its buildscript.
+     *
+     * @param project project owning the captured resolution rules
+     * @return scope retaining rules together with their owning project state
      */
     public static Scope forProject(Project project) {
         return new Scope(project.getGradle(), ((ProjectInternal) project).getOwner());
@@ -45,11 +52,17 @@ public final class ResolutionRules {
 
     /**
      * Settings rules retain their original settings closure in the invocation service.
+     *
+     * @param gradle Gradle invocation owning the settings rules
+     * @return scope retaining settings rules for this invocation
      */
     public static Scope forSettings(Gradle gradle) {
         return new Scope(gradle, null);
     }
 
+    /**
+     * Retains rules with the project state needed for invocation-local execution.
+     */
     public static final class Scope {
         private final Provider<ResolutionRuleService> service;
         private final @Nullable ProjectState owner;
@@ -103,6 +116,11 @@ public final class ResolutionRules {
         return true;
     }
 
+    /**
+     * Delegates dependency resolution to the original retained action.
+     *
+     * @param handle service handle for the original dependency resolution action
+     */
     public record LiveDependency(Handle handle) implements Action<DependencyResolveDetails> {
         @Override
         @SuppressWarnings("unchecked")
@@ -114,6 +132,11 @@ public final class ResolutionRules {
         }
     }
 
+    /**
+     * Delegates component selection to the original retained rule action.
+     *
+     * @param handle service handle for the original component selection rule
+     */
     public record LiveSelectionAction(Handle handle) implements RuleAction<ComponentSelection> {
         @Override
         public List<Class<?>> getInputTypes() {
@@ -131,6 +154,11 @@ public final class ResolutionRules {
         }
     }
 
+    /**
+     * Evaluates the original retained component selection predicate.
+     *
+     * @param handle service handle for the original component selection rule
+     */
     public record LiveSelectionSpec(Handle handle) implements Spec<ComponentSelection> {
         @Override
         @SuppressWarnings("unchecked")
@@ -142,6 +170,9 @@ public final class ResolutionRules {
 
     /**
      * Declares service use and excludes stateful rule execution from configuration-cache reuse.
+     *
+     * @param task task that will execute the captured rules
+     * @param models analysis models containing retained rule handles
      */
     public static void configureTask(Task task, List<AnalysisModel> models) {
         var handles = new ArrayList<Handle>();

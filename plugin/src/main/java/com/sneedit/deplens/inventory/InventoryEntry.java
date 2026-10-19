@@ -16,17 +16,68 @@ public final class InventoryEntry {
     /**
      * The component families that an inventory can track.
      */
-    public enum Type {DEPENDENCY, PLATFORM, CONSTRAINT, PLUGIN, GRADLE}
+    public enum Type {
+        /** A declared module dependency. */
+        DEPENDENCY,
+        /** A platform or bill of materials governing dependency versions. */
+        PLATFORM,
+        /** A declared dependency version constraint. */
+        CONSTRAINT,
+        /** A Gradle plugin declaration or application. */
+        PLUGIN,
+        /** A Gradle wrapper distribution. */
+        GRADLE
+    }
 
     /**
      * Report flags describing resolution, policy decisions and update availability.
      */
-    public enum Status {UP_TO_DATE, UPDATE_AVAILABLE, NO_MATCHING_CANDIDATES, PINNED, IGNORED, CONSTRAINED, NOT_CHECKED, BOM_MANAGED, VERSION_ALIGNED, FAILED}
+    public enum Status {
+        /** No newer update was recommended by the completed check. */
+        UP_TO_DATE,
+        /** A newer version is recommended under the effective policy. */
+        UPDATE_AVAILABLE,
+        /** The query succeeded but no listed version passed the candidate policy. */
+        NO_MATCHING_CANDIDATES,
+        /** The effective policy protects the current version. */
+        PINNED,
+        /** The effective policy excludes this entry or version from update checking. */
+        IGNORED,
+        /** Version selection is subject to a rich constraint or platform. */
+        CONSTRAINED,
+        /** Update checking has not completed for this component. */
+        NOT_CHECKED,
+        /** A bill of materials supplies the component version. */
+        BOM_MANAGED,
+        /** Another component or plugin supplies an aligned version. */
+        VERSION_ALIGNED,
+        /** Collection or update checking failed for this component. */
+        FAILED
+    }
 
     /**
      * The origin of a version value, including generated and unknown sources.
      */
-    public enum SourceKind {BUILD_SCRIPT, SETTINGS, CATALOG, PROPERTY, VARIABLE, PLATFORM, GENERATED, WRAPPER, UNKNOWN}
+    public enum SourceKind {
+        /** A version literal in a project build script. */
+        BUILD_SCRIPT,
+        /** A version declared in a settings script. */
+        SETTINGS,
+        /** A version catalog alias or shared version key. */
+        CATALOG,
+        /** A Gradle property supplying the version. */
+        PROPERTY,
+        /** A script variable supplying the version. */
+        VARIABLE,
+        /** A version supplied by a platform constraint. */
+        PLATFORM,
+        /** A version supplied by generated build logic. */
+        GENERATED,
+        /** A Gradle wrapper distribution URL. */
+        WRAPPER,
+        /** A source whose physical version location could not be identified. */
+        UNKNOWN
+    }
 
     /**
      * A version value and its file location; synthetic sources use descriptive file labels.
@@ -89,15 +140,45 @@ public final class InventoryEntry {
                                         List<String> rejected) {
     }
 
+    /**
+     * Absolute directory of the build owning this component.
+     */
     public final String build;
+    /**
+     * Gradle project path within the owning build.
+     */
     public final String project;
+    /**
+     * Component family used for reporting and update policy selection.
+     */
     public final Type type;
+    /**
+     * Module coordinate, plugin ID or Gradle wrapper identifier.
+     */
     public final String coordinate;
+    /**
+     * Distinct version selectors found at declaration sites, in discovery order.
+     */
     public final Set<String> declaredSelectors = new LinkedHashSet<>();
+    /**
+     * Configuration names associated with declarations or resolutions of this component.
+     */
     public final Set<String> configurations = new TreeSet<>();
+    /**
+     * Declaration sites contributing this component to the inventory.
+     */
     public final Set<Declaration> declarations = new LinkedHashSet<>();
+    /**
+     * Physical or synthetic origins of the declared version values.
+     */
     public final Set<Source> versionSources = new LinkedHashSet<>();
+    /**
+     * Versions actually selected in each resolution configuration.
+     */
     public final Set<Resolution> resolutions = new LinkedHashSet<>();
+    /**
+     * Platform coordinates associated with this component.
+     */
     public final Set<String> platforms = new TreeSet<>();
     /**
      * Effective BOM owners by resolution context, including integration contributions.
@@ -107,13 +188,34 @@ public final class InventoryEntry {
      * Runtime component or plugin supplying the version in each configuration.
      */
     public final Map<String, String> versionAlignments = new TreeMap<>();
+    /**
+     * Configurations in which an integration-managed version was overridden.
+     */
     public final Set<String> managementOverrides = new TreeSet<>();
+    /**
+     * Version catalog aliases and bundles referring to this component.
+     */
     public final Set<CatalogReference> catalogs = new LinkedHashSet<>();
+    /**
+     * Rich version constraints contributed by this component.
+     */
     public final Set<VersionConstraintInfo> versionConstraints = new LinkedHashSet<>();
+    /**
+     * Plugin declaration, application and origin states recorded during collection.
+     */
     public final Set<String> pluginStates = new TreeSet<>();
+    /**
+     * Resolution and update-check status flags; starts as not checked.
+     */
     public final Set<Status> statuses = EnumSet.of(Status.NOT_CHECKED);
+    /**
+     * Distinct collection or update-check warnings for this component.
+     */
     public final Set<String> warnings = new LinkedHashSet<>();
     // Update checks fill these additive fields; inventory-only reports leave them empty.
+    /**
+     * Policy-accepted update candidates; empty before update checking.
+     */
     public final List<String> candidates = new ArrayList<>();
     /**
      * True when update discovery deliberately skipped full consumer-graph checks.
@@ -148,7 +250,23 @@ public final class InventoryEntry {
         // Older JSON reports may omit this additive list. Accept null on input,
         // but expose a non-null immutable list to every caller.
 
-        /** Preserves source compatibility for callers constructing older report contexts. */
+        /**
+         * Preserves source compatibility for callers constructing older report contexts.
+         *
+         * @param configuration resolution configuration name
+         * @param currentVersion current version in this configuration
+         * @param latestWithinSelector latest selector match, or null
+         * @param latestAvailable latest policy-filtered version, or null
+         * @param latestAllowedByBuild latest compatible version, or null
+         * @param patch latest patch candidate, or null
+         * @param minor latest minor candidate, or null
+         * @param major latest major candidate, or null
+         * @param outsideSelector newer versions requiring a selector edit
+         * @param candidates candidates allowed by the update-tier policy
+         * @param unknownCompatibility candidates with unknown compatibility; null becomes an empty list
+         * @param versionPattern custom numeric version pattern, or null
+         * @param preReleasePattern custom prerelease detector, or null
+         */
         public UpdateContext(String configuration, String currentVersion, @Nullable String latestWithinSelector,
                              @Nullable String latestAvailable, @Nullable String latestAllowedByBuild,
                              @Nullable String patch, @Nullable String minor, @Nullable String major,
@@ -201,12 +319,19 @@ public final class InventoryEntry {
         }
     }
 
-    /** A discovered version is a recommendation only when the check completed successfully. */
+    /**
+     * A discovered version is a recommendation only when the check completed successfully.
+     *
+     * @return true when a completed, successful check recommends an update
+     */
     public boolean hasRecommendedUpdate() {
         return recommendedVersion != null && statuses.contains(Status.UPDATE_AVAILABLE)
                 && !statuses.contains(Status.FAILED) && !statuses.contains(Status.NOT_CHECKED);
     }
 
+    /**
+     * Update choices and compatibility evidence for each checked configuration.
+     */
     public final List<UpdateContext> updateContexts = new ArrayList<>();
 
     /**
@@ -219,15 +344,35 @@ public final class InventoryEntry {
     public record ResolutionFailure(String configuration, String dependency, String reason) {
     }
 
+    /**
+     * Credential-safe explanations of failed module resolutions.
+     */
     public final List<ResolutionFailure> resolutionFailures = new ArrayList<>();
+    /**
+     * Description of the effective scoped update rule, or null before policy selection.
+     */
     public @Nullable String appliedRule;
+    /**
+     * Recommended update version, or null when no recommendation is available.
+     */
     public @Nullable String recommendedVersion;
+    /**
+     * Version chosen by the interactive selector, or null when unchanged.
+     */
     public @Nullable String selectedVersion;
+    /**
+     * Regex used to normalize comparison keys, or null for the default ordering.
+     */
     public @Nullable String versionNormalizationPattern;
+    /**
+     * Replacement used with the normalization regex, or null for the default ordering.
+     */
     public @Nullable String versionNormalizationReplacement;
 
     /**
      * Restores the configured ordering for reports and interactive selection.
+     *
+     * @return comparator matching the ordering used during update checking
      */
     public java.util.Comparator<String> versionComparator() {
         return com.sneedit.deplens.updates.VersionNormalization.comparator(versionNormalizationPattern, versionNormalizationReplacement);
@@ -236,6 +381,8 @@ public final class InventoryEntry {
     /**
      * Returns the check's latest patch/minor alternatives followed by its update target.
      * The interactive selector uses the same choices instead of every repository candidate.
+     *
+     * @return ordered patch, minor and target choices without duplicate intermediate versions
      */
     public List<String> updateOptions() {
         String latest = updateContexts.stream().map(UpdateContext::latestAvailable).filter(Objects::nonNull)

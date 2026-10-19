@@ -57,6 +57,12 @@ public final class UpdateEngine {
 
     /**
      * Creates a checker with an invocation-specific graph-check override.
+     *
+     * @param model captured project inventory and resolution settings
+     * @param services factory for detached Gradle resolution services
+     * @param types component types selected for checking
+     * @param queries query cache shared within this invocation
+     * @param checkBuildContext whether candidates must pass full consumer-graph checks
      */
     public UpdateEngine(AnalysisModel model, NativeResolverFactory services, Set<Type> types,
                         VersionQueryCache queries, boolean checkBuildContext) {

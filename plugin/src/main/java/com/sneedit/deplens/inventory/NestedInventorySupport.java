@@ -18,7 +18,13 @@ import java.util.Set;
  * Shared build-scope discovery and filtering for isolated analysis models.
  */
 public final class NestedInventorySupport {
+    /**
+     * Invocation property controlling inventory traversal of included builds.
+     */
     public static final String CHECK_INCLUDED_BUILDS = "deplens.inventory.checkIncludedBuilds";
+    /**
+     * Invocation property controlling inventory traversal of buildSrc.
+     */
     public static final String CHECK_BUILD_SRC = "deplens.inventory.checkBuildSrc";
 
     /**

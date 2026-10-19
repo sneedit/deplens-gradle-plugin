@@ -37,11 +37,15 @@ public abstract class UpdateRule {
 
     /**
      * Java regex applied to comparison keys only; configure together with its replacement.
+     *
+     * @return optional regex for transforming version comparison keys
      */
     public abstract Property<String> getVersionNormalizationPattern();
 
     /**
      * Java regex replacement, including numeric or named capture references.
+     *
+     * @return optional Java regex replacement for normalized comparison keys
      */
     public abstract Property<String> getVersionNormalizationReplacement();
 

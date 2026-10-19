@@ -16,10 +16,29 @@ import java.util.Set;
  * One report shared by the console and JSON writer. No network lookup status is inferred.
  */
 public final class BuildInventory {
+    /** Creates an empty, complete inventory with no update-check result. */
+    public BuildInventory() {
+    }
+
+    /**
+     * Version of the JSON report schema.
+     */
     public final int schemaVersion = 1;
+    /**
+     * Collected components across all included builds and projects.
+     */
     public final List<InventoryEntry> entries = new ArrayList<>();
+    /**
+     * Report-wide collection and analysis warnings.
+     */
     public final List<String> warnings = new ArrayList<>();
+    /**
+     * Build directories represented in this report, in discovery order.
+     */
     public final Set<String> builds = new LinkedHashSet<>();
+    /**
+     * Whether inventory collection completed without unresolved scopes or failures.
+     */
     public boolean complete = true;
     /**
      * Null for inventories; independent of whether the current build resolved completely.
@@ -33,6 +52,9 @@ public final class BuildInventory {
      * Entries omitted from this view only; completeness still describes the complete checked scope.
      */
     public int hiddenEntries;
+    /**
+     * Number of failed entries hidden by the output filter.
+     */
     public int hiddenFailedEntries;
 
     /**
@@ -47,6 +69,9 @@ public final class BuildInventory {
                                  List<String> catalogAliases) {
     }
 
+    /**
+     * Physical version sources selected for editing by the interactive console.
+     */
     public final List<SelectedSource> selectedSources = new ArrayList<>();
 
     /**

@@ -45,6 +45,10 @@ public final class InventoryCollector {
 
     /**
      * Name filters apply to project configurations; plugin and script classpaths remain checked.
+     *
+     * @param project project whose declarations and resolutions are collected
+     * @param selectedConfiguration predicate selecting resolvable configurations to inspect
+     * @param filtering whether an explicit resolvable-configuration filter is active
      */
     public InventoryCollector(Project project, java.util.function.Predicate<String> selectedConfiguration, boolean filtering) {
         this.selectedConfiguration = selectedConfiguration;

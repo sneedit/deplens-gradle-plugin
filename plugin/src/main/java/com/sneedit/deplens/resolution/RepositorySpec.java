@@ -20,7 +20,13 @@ import java.util.*;
  * Detached repository configuration. Never retains a Gradle project, handler or credentials provider.
  */
 public final class RepositorySpec {
+    /**
+     * Original repository name and kind: Maven, Ivy, flat directory or the implicit Plugin Portal.
+     */
     public final String name, kind;
+    /**
+     * Repository base URL, or null for a flat directory repository.
+     */
     public @Nullable String url;
 
     /**
@@ -33,6 +39,8 @@ public final class RepositorySpec {
 
     /**
      * Recreates Gradle's implicit plugin repository without modifying the consumer's settings.
+     *
+     * @return snapshot of the implicit Gradle Plugin Portal repository
      */
     public static RepositorySpec implicitPluginPortal() {
         var spec = new RepositorySpec("Gradle Central Plugin Repository", "pluginPortal");
@@ -40,17 +48,53 @@ public final class RepositorySpec {
         return spec;
     }
 
+    /**
+     * Whether the repository explicitly permits an insecure transport protocol.
+     */
     public boolean insecure;
+    /**
+     * Additional Maven artifact locations, in declaration order.
+     */
     public List<String> artifactUrls = new ArrayList<>();
+    /**
+     * Absolute paths searched by a flat directory repository.
+     */
     public List<String> directories = new ArrayList<>();
+    /**
+     * Captured authentication values; may contain secrets and must never be logged.
+     */
     public Map<String, @Nullable String> credentials = new LinkedHashMap<>();
+    /**
+     * Credential scheme: password, HTTP header or AWS, or null when no credentials were configured.
+     */
     public @Nullable String credentialsKind;
+    /**
+     * Authentication implementation types configured for this repository.
+     */
     public List<Class<? extends Authentication>> authentication = new ArrayList<>();
+    /**
+     * Ordered content include and exclude rules.
+     */
     public List<ContentRule> content = new ArrayList<>();
+    /**
+     * Configuration names explicitly included in or excluded from this repository.
+     */
     public Set<String> includedConfigurations = new LinkedHashSet<>(), excludedConfigurations = new LinkedHashSet<>();
+    /**
+     * Attribute values required for a configuration to use this repository.
+     */
     public Map<AttributeSpec, Set<Object>> requiredAttributes = new LinkedHashMap<>();
+    /**
+     * Metadata-source flags, Gradle metadata redirection policy, and snapshot and release acceptance flags.
+     */
     public boolean pom, gradleMetadata, artifact, ignoreRedirect, snapshots = true, releases = true;
+    /**
+     * Ivy descriptor and artifact layout patterns, in declaration order.
+     */
     public List<String> ivyPatterns = new ArrayList<>(), artifactPatterns = new ArrayList<>();
+    /**
+     * Whether Ivy uses Maven-compatible paths and reads Ivy descriptors.
+     */
     public boolean m2compatible, ivyDescriptor;
 
     /**

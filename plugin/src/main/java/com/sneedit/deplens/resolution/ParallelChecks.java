@@ -26,6 +26,17 @@ public final class ParallelChecks {
     private ParallelChecks() {
     }
 
+    /**
+     * Registers independent project checks and returns their partial report providers.
+     *
+     * @param requester project owning the aggregate check
+     * @param aggregate aggregate task name used to distinguish the partial checks
+     * @param models captured project models to check
+     * @param types component types to check
+     * @param fast whether to skip consumer-graph candidate validation
+     * @param queries invocation-local query service shared by the checks
+     * @return providers of the per-project JSON reports
+     */
     public static List<Provider<RegularFile>> prepare(Project requester, String aggregate,
                                                       List<AnalysisModel> models, Set<InventoryEntry.Type> types,
                                                       boolean fast, Provider<CheckQueryService> queries) {

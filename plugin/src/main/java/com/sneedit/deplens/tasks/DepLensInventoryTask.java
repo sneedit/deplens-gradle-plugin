@@ -40,24 +40,46 @@ import java.util.Set;
 public abstract class DepLensInventoryTask extends DefaultTask {
     /**
      * Declaration-name report filters, detached from the resolution model.
+     *
+     * @return include patterns matching declaration configuration names
      */
     @org.gradle.api.tasks.Input
     public abstract ListProperty<String> getOutputDeclaredConfigurationIncludes();
 
+    /**
+     * Provides declaration-name patterns to hide from report presentation.
+     *
+     * @return exclusion patterns for declaration configuration names
+     */
     @org.gradle.api.tasks.Input
     public abstract ListProperty<String> getOutputDeclaredConfigurationExcludes();
 
     /**
      * Presentation only; update discovery and JSON reports do not depend on this mode.
+     *
+     * @return console presentation mode property
      */
     @org.gradle.api.tasks.Input
     public abstract org.gradle.api.provider.Property<String> getConsoleMode();
 
+    /**
+     * Sets the console presentation mode from the command line.
+     *
+     * @param mode standard for full output or compact to hide project lines
+     * @throws IllegalArgumentException if the mode is unsupported
+     */
     @org.gradle.api.tasks.options.Option(option = "console-mode", description = "Console presentation: standard or compact (hide Projects lines)")
     public void setConsoleModeOption(String mode) {
         getConsoleMode().set(validateConsoleMode(mode));
     }
 
+    /**
+     * Validates a console presentation mode without altering analysis settings.
+     *
+     * @param mode requested presentation mode
+     * @return the validated mode
+     * @throws IllegalArgumentException if the mode is neither standard nor compact
+     */
     public static String validateConsoleMode(String mode) {
         if (!mode.equals("standard") && !mode.equals("compact"))
             throw new IllegalArgumentException("consoleMode must be standard or compact; got: " + mode);
@@ -147,6 +169,8 @@ public abstract class DepLensInventoryTask extends DefaultTask {
 
     /**
      * Merges and normalizes captured inventories before inventory or update processing.
+     *
+     * @return merged inventory for every captured project model
      */
     protected BuildInventory capturedInventory() {
         return com.sneedit.deplens.inventory.CapturedInventory.merge(getAnalysisModels().get());
@@ -173,6 +197,9 @@ public abstract class DepLensInventoryTask extends DefaultTask {
 
     /**
      * Filters report and interactive visibility; failure policies and shared-source safety use the full report.
+     *
+     * @param report complete report before presentation filtering
+     * @return report view with hidden entry counts and filtered visible entries
      */
     protected BuildInventory reportForOutput(BuildInventory report) {
         return com.sneedit.deplens.inventory.OutputDeclaredConfigurationFilter.apply(report,

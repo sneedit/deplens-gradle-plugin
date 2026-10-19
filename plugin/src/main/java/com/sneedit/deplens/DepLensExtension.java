@@ -21,11 +21,15 @@ public abstract class DepLensExtension {
 
     /**
      * Console presentation: standard includes project paths; compact hides Projects lines.
+     *
+     * @return console mode property accepting standard or compact
      */
     public abstract Property<String> getConsoleMode();
 
     /**
      * Controls full consumer-graph checks for update candidates; enabled by default.
+     *
+     * @return whether update candidates are checked in the full consumer graph
      */
     public abstract Property<Boolean> getCheckBuildContext();
 
@@ -92,24 +96,38 @@ public abstract class DepLensExtension {
 
     /**
      * Selects project configurations before inventory collection and update discovery.
+     *
+     * @return filter selecting resolvable configurations for analysis
      */
     @Nested
     public ConfigurationFilter getCheckResolvableConfigurationFilter() {
         return checkResolvableConfigurationFilter;
     }
 
+    /**
+     * Configures which resolvable configurations are analyzed.
+     *
+     * @param action configuration action for the analysis filter
+     */
     public void checkResolvableConfigurationFilter(Action<? super ConfigurationFilter> action) {
         action.execute(checkResolvableConfigurationFilter);
     }
 
     /**
      * Selects report entries by declaration configuration, without changing checks.
+     *
+     * @return filter selecting declared configurations for presentation
      */
     @Nested
     public ConfigurationFilter getOutputDeclaredConfigurationFilter() {
         return outputDeclaredConfigurationFilter;
     }
 
+    /**
+     * Configures which declared configurations appear in reports and interactive selection.
+     *
+     * @param action configuration action for the presentation filter
+     */
     public void outputDeclaredConfigurationFilter(Action<? super ConfigurationFilter> action) {
         action.execute(outputDeclaredConfigurationFilter);
     }

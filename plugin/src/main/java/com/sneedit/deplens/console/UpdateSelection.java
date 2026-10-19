@@ -22,13 +22,37 @@ public final class UpdateSelection {
      * One version-source decision shared by all consumers of the same physical literal.
      */
     public static final class Row {
+        /**
+         * Validated physical location of the shared version literal.
+         */
         public final SourceEditor.Location location;
+        /**
+         * Inventory source describing the original version literal.
+         */
         public final Source source;
+        /**
+         * All components sharing this version source, including consumers outside the visible report.
+         */
         public final List<InventoryEntry> consumers = new ArrayList<>();
+        /**
+         * Selectable versions, with the original value at index zero.
+         */
         public final List<String> options = new ArrayList<>();
+        /**
+         * Index of the currently selected option; zero keeps the source unchanged.
+         */
         public int selected;
+        /**
+         * Index of the recommended option in the selectable versions.
+         */
         public int recommended;
+        /**
+         * Whether the original value is a dynamic version selector.
+         */
         public final boolean dynamic;
+        /**
+         * Catalog library and plugin aliases affected by this shared version key.
+         */
         public final List<String> catalogMembers = new ArrayList<>();
 
         /**
@@ -83,7 +107,13 @@ public final class UpdateSelection {
         }
     }
 
+    /**
+     * Editable version sources grouped into shared consumer decisions.
+     */
     public final List<Row> rows = new ArrayList<>();
+    /**
+     * Read-only explanations for sources that cannot be edited safely.
+     */
     public final List<String> notices = new ArrayList<>();
 
     /**
@@ -97,6 +127,9 @@ public final class UpdateSelection {
 
     /**
      * Limits selectable sources to the report view while protecting every shared-source consumer.
+     *
+     * @param report complete report used to protect every shared-source consumer
+     * @param visibleEntries entries whose version sources may be offered for editing
      */
     public UpdateSelection(BuildInventory report, Collection<InventoryEntry> visibleEntries) {
         Set<InventoryEntry> visible = Set.copyOf(visibleEntries);
@@ -171,7 +204,13 @@ public final class UpdateSelection {
         return apply(new WrapperChecksumUpdater(false));
     }
 
-    /** Prepares wrapper checksum edits before applying any selected source changes. */
+    /**
+     * Prepares wrapper checksum edits before applying any selected source changes.
+     *
+     * @param checksums checksum resolver used to prepare paired wrapper URL and checksum edits
+     * @return paths changed after every selected edit has passed preflight validation
+     * @throws IOException if checksum lookup, source validation or an edit fails
+     */
     public List<Path> apply(WrapperChecksumUpdater checksums) throws IOException {
         List<SourceEditor.Change> changes = new ArrayList<>();
         for (Row row : rows) if (row.selected != 0) {

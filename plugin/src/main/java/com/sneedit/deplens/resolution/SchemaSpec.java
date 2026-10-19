@@ -17,7 +17,17 @@ import java.util.*;
  * Attribute rule classes and isolated parameters, without a project-scoped instantiator.
  */
 public final class SchemaSpec {
+    /** Creates an empty attribute schema snapshot. */
+    public SchemaSpec() {
+    }
+
+    /**
+     * Attribute disambiguation precedence, in evaluation order.
+     */
     public List<AttributeSpec> precedence = new ArrayList<>();
+    /**
+     * Compatibility and disambiguation rules indexed by captured attribute.
+     */
     public Map<AttributeSpec, Rules> attributes = new LinkedHashMap<>();
 
     /**

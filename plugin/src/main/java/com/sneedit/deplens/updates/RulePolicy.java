@@ -17,17 +17,48 @@ import java.util.regex.Pattern;
  * Precedence is applied per field, so a specific ignore does not discard a global pin.
  */
 public final class RulePolicy {
+    /** Creates an unpinned policy accepting stable updates of any tier. */
+    public RulePolicy() {
+    }
+
+    /**
+     * Whether the current version is protected from update recommendations.
+     */
     public boolean pinned;
+    /**
+     * Whether prerelease candidates are accepted.
+     */
     public boolean preReleases;
+    /**
+     * Highest allowed update tier: patch, minor or major.
+     */
     public String allowed = "major";
+    /**
+     * Exact original version strings excluded by this policy.
+     */
     public List<String> ignored = List.of();
+    /**
+     * Patterns excluding matching original version strings.
+     */
     public List<Pattern> ignoredVersionPatterns = List.of();
+    /**
+     * Custom numeric version parser, or null for the default classifier.
+     */
     public @Nullable Pattern versionPattern;
+    /**
+     * Custom prerelease detector, or null for the default token matcher.
+     */
     public @Nullable Pattern preReleasePattern;
+    /**
+     * Comparison-key normalization, or null for Gradle version ordering.
+     */
     public @Nullable VersionNormalization normalization;
 
     /**
      * Excludes exact versions or matching original version strings, even when prereleases are allowed.
+     *
+     * @param version original repository version string
+     * @return true when an exact exclusion or exclusion pattern matches
      */
     public boolean isIgnored(String version) {
         return ignored.contains(version) || ignoredVersionPatterns.stream().anyMatch(pattern -> pattern.matcher(version).find());
@@ -35,6 +66,10 @@ public final class RulePolicy {
 
     /**
      * Compares normalized keys when configured, otherwise delegates directly to Gradle.
+     *
+     * @param left first original version string
+     * @param right second original version string
+     * @return a negative value, zero or a positive value according to version ordering
      */
     public int compare(String left, String right) {
         return normalization == null ? Versions.compare(left, right) : normalization.compare(left, right);
@@ -76,6 +111,9 @@ public final class RulePolicy {
         };
     }
 
+    /**
+     * Human-readable description of the effective scoped rule.
+     */
     public String description = "default";
 
     /**

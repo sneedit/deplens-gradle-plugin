@@ -19,6 +19,9 @@ import javax.inject.Inject;
  * Captures only the project whose model Gradle is currently building, under its own isolation boundary.
  */
 public final class AnalysisModelPlugin implements Plugin<Project> {
+    /**
+     * Tooling model name used to retrieve captured DepLens analysis models from nested builds.
+     */
     public static final String NAME = "com.sneedit.deplens.AnalysisModel";
     private final ToolingModelBuilderRegistry builders;
 

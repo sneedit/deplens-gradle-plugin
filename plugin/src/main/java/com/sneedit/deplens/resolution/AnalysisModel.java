@@ -20,13 +20,37 @@ import java.util.*;
  * Configuration-phase values. Stateful resolution rules are referenced through an invocation-local service.
  */
 public final class AnalysisModel {
+    /**
+     * Build directory, project path, serialized inventory and Gradle release feed URL.
+     */
     public String build, project, inventory, versionsUrl;
+    /**
+     * Whether repository queries must use locally cached metadata only.
+     */
     public boolean offline;
+    /**
+     * Whether update candidates must pass the consumer dependency graph check.
+     */
     public boolean checkBuildContext = true;
+    /**
+     * Captured attribute schemas for project and buildscript dependency resolution.
+     */
     public SchemaSpec schema, scriptSchema;
+    /**
+     * Component types whose recommended updates should fail the requesting task.
+     */
     public Set<InventoryEntry.Type> failTypes = new LinkedHashSet<>();
+    /**
+     * Effective update policies indexed by inventory entry identity.
+     */
     public Map<String, RulePolicy> policies = new LinkedHashMap<>();
+    /**
+     * Repositories for project dependencies, buildscript dependencies and settings plugins, in declaration order.
+     */
     public List<RepositorySpec> repositories = new ArrayList<>(), scriptRepositories = new ArrayList<>(), settingsRepositories = new ArrayList<>();
+    /**
+     * Captured project, buildscript and settings configurations indexed by configuration name.
+     */
     public Map<String, ConfigurationSpec> configurations = new LinkedHashMap<>(), scriptConfigurations = new LinkedHashMap<>(), settingsConfigurations = new LinkedHashMap<>();
 
     /**

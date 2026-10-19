@@ -24,6 +24,9 @@ public final class PosixTerminal implements AutoCloseable {
     private final InputStream forwarded = System.in instanceof PipedInputStream ? System.in : InputStream.nullInputStream();
     private @Nullable FileInputStream stream;
     private @Nullable PrintWriter writer;
+    /**
+     * Terminal dimensions in character columns and rows, captured when the device is opened.
+     */
     public final int width, height;
 
     /**
@@ -60,6 +63,9 @@ public final class PosixTerminal implements AutoCloseable {
 
     /**
      * Finds the CLI connected to this daemon; never guesses from other open terminals.
+     *
+     * @return device path of the terminal connected to this Gradle CLI
+     * @throws IOException if no connected terminal can be identified or process inspection fails
      */
     public static String discover() throws IOException {
         long daemon = ProcessHandle.current().pid();

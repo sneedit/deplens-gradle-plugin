@@ -50,7 +50,16 @@ public final class Versions {
     /**
      * Numeric update levels plus an unknown bucket for versions that do not fit.
      */
-    public enum Tier {PATCH, MINOR, MAJOR, UNKNOWN}
+    public enum Tier {
+        /** A version change within the current major and minor version. */
+        PATCH,
+        /** A version change within the current major version. */
+        MINOR,
+        /** A version change crossing a major version boundary. */
+        MAJOR,
+        /** A version change that cannot be classified by the effective numeric pattern. */
+        UNKNOWN
+    }
 
     /**
      * Classifies a candidate as patch, minor, major or unknown compatibility.

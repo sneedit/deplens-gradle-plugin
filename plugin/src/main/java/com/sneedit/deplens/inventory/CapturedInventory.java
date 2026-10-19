@@ -16,6 +16,12 @@ public final class CapturedInventory {
     private CapturedInventory() {
     }
 
+    /**
+     * Merges captured project inventories and normalizes component identities.
+     *
+     * @param models captured models with the primary inventory first
+     * @return aggregate report containing the captured entries and warnings
+     */
     public static BuildInventory merge(List<AnalysisModel> models) {
         BuildInventory report = Objects.requireNonNull(
                 new Gson().fromJson(models.getFirst().inventory, BuildInventory.class), "Missing DepLens inventory");

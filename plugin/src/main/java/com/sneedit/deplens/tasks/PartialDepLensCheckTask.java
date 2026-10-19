@@ -25,18 +25,47 @@ import java.nio.file.Files;
  */
 @DisableCachingByDefault(because = "Update checks observe live repository state")
 public abstract class PartialDepLensCheckTask extends DepLensInventoryTask {
+    /** Creates a per-project update-check task for aggregation. */
+    public PartialDepLensCheckTask() {
+    }
+
+    /**
+     * Provides the model belonging to this project check.
+     *
+     * @return captured project analysis model
+     */
     @Internal
     public abstract Property<AnalysisModel> getOwnModel();
 
+    /**
+     * Provides the serialized baseline inventory for this project.
+     *
+     * @return baseline inventory JSON property
+     */
     @Internal
     public abstract Property<String> getCapturedInventory();
 
+    /**
+     * Selects the component families included in this project check.
+     *
+     * @return component types to check
+     */
     @Input
     public abstract SetProperty<InventoryEntry.Type> getCheckTypes();
 
+    /**
+     * Controls whether this project check skips candidate graph validation.
+     *
+     * @return fast-check mode property
+     */
     @Input
     public abstract Property<Boolean> getFastCheck();
 
+    /**
+     * Provides the invocation-local query cache shared with sibling project checks.
+     *
+     * @return shared query service property
+     */
     @Internal
     public abstract Property<CheckQueryService> getQueryService();
 

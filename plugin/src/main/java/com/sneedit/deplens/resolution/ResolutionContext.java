@@ -20,7 +20,13 @@ import java.util.Optional;
  * A resolver owned by one analysis invocation, with Gradle's transport, cache and selection engine.
  */
 public final class ResolutionContext {
+    /**
+     * Detached configuration container used to construct native resolution queries.
+     */
     public final ConfigurationContainer configurations;
+    /**
+     * Dependency handler belonging to the detached resolver.
+     */
     public final DependencyHandler dependencies;
     private final Map<String, ConfigurationSpec> specifications;
     private final org.gradle.api.model.ObjectFactory objects;
@@ -70,6 +76,8 @@ public final class ResolutionContext {
 
     /**
      * Candidate walks reject versions before variant matching, so their identity needs no schema.
+     *
+     * @return invocation-local repository identity containing sensitive authentication values
      */
     public List<?> repositoryIdentity() {
         return repositoryIdentity;
@@ -77,6 +85,8 @@ public final class ResolutionContext {
 
     /**
      * Reconstructs the same query context after a temporary repository failure.
+     *
+     * @return replacement context with a fresh metadata session
      */
     public ResolutionContext fresh() {
         factory.invalidate(queryIdentity);
@@ -85,6 +95,8 @@ public final class ResolutionContext {
 
     /**
      * Uses the replacement metadata session after another query recovered from a rate limit.
+     *
+     * @return this context or its replacement using the current metadata session
      */
     public ResolutionContext current() {
         return factory.configured(queryIdentity, repositories, schema) == resolver ? this

@@ -24,6 +24,10 @@ import java.util.function.Supplier;
  * Consumer graphs are shared only when all captured graph inputs and selection policies match.
  */
 public final class VersionQueryCache {
+    /** Creates an empty invocation-local cache of listings and graph query results. */
+    public VersionQueryCache() {
+    }
+
     private record Key(List<?> context, String coordinate, String selector) {
     }
 
@@ -91,6 +95,8 @@ public final class VersionQueryCache {
 
     /**
      * Logs aggregate timing and reuse counts without including repository identities or credentials.
+     *
+     * @param logger Gradle logger receiving invocation-level query statistics
      */
     public void logStatistics(org.gradle.api.logging.Logger logger) {
         logger.info("DepLens graph queries: {} requested, {} reused ({} permanent failures), {} with opaque rules; resolution {} ms",

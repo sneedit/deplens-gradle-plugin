@@ -15,12 +15,33 @@ import java.util.Map;
  * Values inherited by projects that have no explicit DepLens extension.
  */
 public final class AnalysisDefaults {
+    /**
+     * Inherited update-tier limits for dependencies, plugins and Gradle, and the Gradle release feed URL.
+     */
     public String dependencyAllowed, pluginAllowed, gradleAllowed, versionsUrl;
+    /**
+     * Inherited prerelease, failure, pinning and nested-build inclusion flags.
+     */
     public boolean dependencyPre, pluginPre, gradlePre, dependencyFail, pluginFail, gradleFail, gradlePin, included, buildSrc;
+    /**
+     * Dependency coordinates and plugin IDs whose current versions are protected.
+     */
     public List<String> dependencyPins, pluginPins;
+    /**
+     * Exact ignored versions indexed by dependency coordinate or plugin ID.
+     */
     public Map<String, List<String>> dependencyIgnores, pluginIgnores;
+    /**
+     * Scoped update rules inherited from the requesting build.
+     */
     public List<UpdateRules.Spec> rules;
+    /**
+     * Whether candidate versions are checked against the full consumer dependency graph.
+     */
     public boolean checkBuildContext = true;
+    /**
+     * Include and exclude regexes selecting resolvable configurations for analysis.
+     */
     public List<String> configurationIncludes, configurationExcludes;
 
     /**
@@ -52,6 +73,8 @@ public final class AnalysisDefaults {
 
     /**
      * Explicit project settings override inherited lists, including an explicit empty list.
+     *
+     * @param e project extension whose unset filters inherit these defaults
      */
     public void inheritCheckResolvableConfigurationFilter(DepLensExtension e) {
         e.getCheckResolvableConfigurationFilter().getIncludes().convention(configurationIncludes);

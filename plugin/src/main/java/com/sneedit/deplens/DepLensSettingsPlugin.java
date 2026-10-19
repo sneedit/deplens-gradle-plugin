@@ -14,6 +14,13 @@ import org.gradle.api.initialization.Settings;
  * Settings entry point; the isolated callback captures no live settings or project model.
  */
 public final class DepLensSettingsPlugin implements Plugin<Settings> {
+    /** Creates the settings plugin that captures settings resolution context. */
+    public DepLensSettingsPlugin() {
+    }
+
+    /**
+     * Project extra-property key holding the captured settings resolution model.
+     */
     public static final String CONTEXT = "deplens.settingsSnapshot";
 
     /**

@@ -21,6 +21,11 @@ public final class WrapperChecksumUpdater {
 
     private final ChecksumReader reader;
 
+    /**
+     * Creates a checksum updater honoring the Gradle offline setting.
+     *
+     * @param offline whether network requests for checksum sidecars are prohibited
+     */
     public WrapperChecksumUpdater(boolean offline) {
         this(new DistributionChecksumReader(offline)::read);
     }
@@ -29,7 +34,14 @@ public final class WrapperChecksumUpdater {
         this.reader = reader;
     }
 
-    /** Resolve the exact selected distribution's checksum before the shared source-edit preflight. */
+    /**
+     * Resolve the exact selected distribution's checksum before the shared source-edit preflight.
+     *
+     * @param version validated location of the wrapper distribution version
+     * @param target selected Gradle version whose exact distribution checksum is required
+     * @return checksum edit, or an empty list if the wrapper declares no checksum
+     * @throws IOException if wrapper properties are ambiguous or the selected checksum cannot be validated
+     */
     public List<SourceEditor.Change> changes(SourceEditor.Location version, String target) throws IOException {
         String text = version.snapshot();
         var properties = new WrapperProperties();

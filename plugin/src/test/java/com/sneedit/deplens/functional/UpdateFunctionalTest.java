@@ -1825,10 +1825,14 @@ class UpdateFunctionalTest {
     void springBootKotlinAlignmentPreservesOverridesAndPluginUpdates() throws Exception {
         org.junit.jupiter.api.Assumptions.assumeTrue(org.gradle.util.GradleVersion.version(System.getProperty("deplens.test.gradleVersion"))
                 .compareTo(org.gradle.util.GradleVersion.version("8.14")) >= 0, "Spring Boot 4.1 requires Gradle 8.14+");
+        String kotlinVersion = System.getProperty("deplens.test.kotlinVersion");
+        String[] versionParts = kotlinVersion.split("\\.");
+        String updateVersion = versionParts[0] + "." + versionParts[1] + "." + (Integer.parseInt(versionParts[2]) + 1);
+        String update = kotlinVersion + " → " + updateVersion;
         for (String module : List.of("kotlin-stdlib", "kotlin-reflect", "explicit"))
-            modules("org.jetbrains.kotlin", module, "2.1.0", "2.2.0", "2.3.0");
+            modules("org.jetbrains.kotlin", module, "2.1.0", kotlinVersion, updateVersion);
         modules("org.springframework.boot", "spring-boot-dependencies", "4.1.1");
-        modules("org.jetbrains.kotlin.jvm", "org.jetbrains.kotlin.jvm.gradle.plugin", "2.2.0", "2.3.0");
+        modules("org.jetbrains.kotlin.jvm", "org.jetbrains.kotlin.jvm.gradle.plugin", kotlinVersion, updateVersion);
         write("repo/org/springframework/boot/spring-boot-dependencies/4.1.1/spring-boot-dependencies-4.1.1.pom", """
                 <project><modelVersion>4.0.0</modelVersion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-dependencies</artifactId><version>4.1.1</version><packaging>pom</packaging>
                 <properties><kotlin.version>2.1.0</kotlin.version></properties><dependencyManagement><dependencies>
@@ -1842,7 +1846,7 @@ class UpdateFunctionalTest {
         write("build.gradle", """
                 buildscript {
                     repositories { maven { url = uri('repo') } }
-                    dependencies { classpath files(%s); classpath 'org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:2.2.0' }
+                    dependencies { classpath files(%s); classpath 'org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:%s' }
                 }
                 plugins { id 'java'; id 'com.sneedit.deplens' }
                 apply plugin: 'org.springframework.boot'
@@ -1856,10 +1860,10 @@ class UpdateFunctionalTest {
                 }
                 dependencies {
                     implementation 'org.jetbrains.kotlin:kotlin-reflect'
-                    implementation 'org.jetbrains.kotlin:explicit:2.2.0'
+                    implementation 'org.jetbrains.kotlin:explicit:%s'
                 }
                 depLens { rules { gradle { pinned = true } } }
-                """.formatted(classpath));
+                """.formatted(classpath, kotlinVersion, kotlinVersion));
         String output = plain(run("depLensCheck"));
         JsonObject report = report("depLensCheck");
         // Compiler tool configurations are intentionally unresolved in this metadata-only fixture.
@@ -1868,16 +1872,16 @@ class UpdateFunctionalTest {
         assertThat(reflect.getAsJsonArray("statuses").toString()).contains("VERSION_ALIGNED").doesNotContain("UPDATE_AVAILABLE", "NOT_CHECKED");
         assertThat(reflect.getAsJsonObject("versionAlignments").toString()).contains("plugin:org.jetbrains.kotlin.jvm");
         assertThat(output).doesNotContain("• org.jetbrains.kotlin:kotlin-reflect ");
-        assertThat(output).contains("• org.jetbrains.kotlin:explicit 2.2.0 → 2.3.0", "• org.jetbrains.kotlin.jvm 2.2.0 → 2.3.0");
+        assertThat(output).contains("• org.jetbrains.kotlin:explicit " + update, "• org.jetbrains.kotlin.jvm " + update);
         assertThat(entry(report, "org.jetbrains.kotlin.jvm", ":").getAsJsonArray("statuses").toString()).contains("UPDATE_AVAILABLE");
         assertThat(entry(report, "org.jetbrains.kotlin:kotlin-stdlib", ":").getAsJsonArray("statuses").toString())
                 .contains("VERSION_ALIGNED").doesNotContain("UPDATE_AVAILABLE", "NOT_CHECKED");
         assertThat(output).doesNotContain("• org.jetbrains.kotlin:kotlin-stdlib ");
         String automaticBuild = Files.readString(dir.resolve("build.gradle"));
         // An explicit constraint equal to the plugin version must remain independently checked.
-        Files.writeString(dir.resolve("build.gradle"), automaticBuild + "\ndependencies { constraints { implementation 'org.jetbrains.kotlin:kotlin-reflect:2.2.0' } }\n");
+        Files.writeString(dir.resolve("build.gradle"), automaticBuild + "\ndependencies { constraints { implementation 'org.jetbrains.kotlin:kotlin-reflect:%s' } }\n".formatted(kotlinVersion));
         output = plain(run("depLensCheck"));
-        assertThat(output).contains("• org.jetbrains.kotlin:kotlin-reflect 2.2.0 → 2.3.0", "• org.jetbrains.kotlin.jvm 2.2.0 → 2.3.0");
+        assertThat(output).contains("• org.jetbrains.kotlin:kotlin-reflect " + update, "• org.jetbrains.kotlin.jvm " + update);
         for (JsonElement element : report("depLensCheck").getAsJsonArray("entries")) {
             JsonObject row = element.getAsJsonObject();
             if (row.get("coordinate").getAsString().equals("org.jetbrains.kotlin:kotlin-reflect"))
@@ -1885,16 +1889,16 @@ class UpdateFunctionalTest {
         }
         Files.writeString(dir.resolve("build.gradle"), automaticBuild);
         // An explicit property remains an override even if its value equals the Kotlin plugin version.
-        Files.writeString(dir.resolve("build.gradle"), "\next['kotlin.version'] = '2.2.0'\n", StandardOpenOption.APPEND);
+        Files.writeString(dir.resolve("build.gradle"), "\next['kotlin.version'] = '%s'\n".formatted(kotlinVersion), StandardOpenOption.APPEND);
         output = plain(run("depLensCheck"));
         report = report("depLensCheck");
         assertThat(entry(report, "org.jetbrains.kotlin:kotlin-reflect", ":").getAsJsonArray("statuses").toString())
                 .contains("UPDATE_AVAILABLE").doesNotContain("VERSION_ALIGNED", "BOM_MANAGED");
-        assertThat(output).contains("• org.jetbrains.kotlin:kotlin-reflect 2.2.0 → 2.3.0", "• org.jetbrains.kotlin.jvm 2.2.0 → 2.3.0");
+        assertThat(output).contains("• org.jetbrains.kotlin:kotlin-reflect " + update, "• org.jetbrains.kotlin.jvm " + update);
         Files.writeString(dir.resolve("build.gradle"), automaticBuild);
-        write("gradle.properties", "kotlin.version=2.2.0\n");
+        write("gradle.properties", "kotlin.version=%s\n".formatted(kotlinVersion));
         output = plain(run("depLensCheck"));
-        assertThat(output).contains("• org.jetbrains.kotlin:kotlin-reflect 2.2.0 → 2.3.0", "• org.jetbrains.kotlin.jvm 2.2.0 → 2.3.0");
+        assertThat(output).contains("• org.jetbrains.kotlin:kotlin-reflect " + update, "• org.jetbrains.kotlin.jvm " + update);
         // An override equal to the published BOM default is still explicit.
         write("gradle.properties", "kotlin.version=2.1.0\n");
         run("depLensCheck");

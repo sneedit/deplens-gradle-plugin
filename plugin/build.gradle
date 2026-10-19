@@ -42,19 +42,19 @@ dependencies {
     errorprone libs.error.prone
     errorprone libs.null.away
     implementation libs.gson
-    implementation 'org.tomlj:tomlj:2.2.0'
+    implementation libs.tomlj
 
     testImplementation libs.junit.jupiter
     testImplementation libs.assertj.core
     testImplementation libs.mockito.core
     testImplementation libs.mockito.junit.jupiter
     testImplementation gradleTestKit()
-    testImplementation 'io.spring.gradle:dependency-management-plugin:1.1.7'
+    testImplementation libs.spring.dependency.management
     testRuntimeOnly libs.junit.platform.launcher
-    springProtobufTestPlugins 'org.springframework.boot:spring-boot-gradle-plugin:4.1.1'
-    springProtobufTestPlugins 'com.google.protobuf:protobuf-gradle-plugin:0.10.0'
-    springProtobufTestPlugins 'io.spring.gradle:dependency-management-plugin:1.1.7'
-    springKotlinTestPlugins 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0'
+    springProtobufTestPlugins libs.spring.boot.gradle.plugin
+    springProtobufTestPlugins libs.protobuf.gradle.plugin
+    springProtobufTestPlugins libs.spring.dependency.management
+    springKotlinTestPlugins libs.kotlin.gradle.plugin
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -71,6 +71,7 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named('test') {
     useJUnitPlatform()
+    systemProperty 'deplens.test.kotlinVersion', libs.versions.kotlin.get()
     jvmArgumentProviders.add(new TestPluginClasspathArguments(
             springProtobufTestConfiguration.get(), springKotlinTestConfiguration.get()))
     systemProperty "deplens.test.gradleVersion", providers.gradleProperty("testGradleVersion").getOrElse(gradle.gradleVersion)
@@ -110,7 +111,7 @@ class TestPluginClasspathArguments implements CommandLineArgumentProvider {
 }
 
 jacoco {
-    toolVersion = '0.8.14'
+    toolVersion = '0.8.15'
 }
 
 jacocoTestReport {

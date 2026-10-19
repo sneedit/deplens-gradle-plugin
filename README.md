@@ -459,6 +459,11 @@ python3 scripts/test-changelog.py git-cliff
 
 Parser rules and output formatting are defined in [`cliff.toml`](cliff.toml).
 
+## Acknowledgements
+
+Developed with assistance from [OpenAI Codex](https://openai.com/codex/)
+for implementation, code review, testing, and documentation.
+
 ## License
 
 Copyright 2026 Sneed IT. [Apache-2.0](LICENSE) · [NOTICE](NOTICE).

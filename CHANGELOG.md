@@ -6,6 +6,10 @@ Notable changes, generated from Conventional Commits by [git-cliff](https://git-
 
 [Compare changes](https://github.com/sneedit/deplens-gradle-plugin/compare/v0.1.0...HEAD)
 
+### Bug fixes
+
+- Preserve isolated projects support on Gradle 8 ([c63cb91](https://github.com/sneedit/deplens-gradle-plugin/commit/c63cb915fbfe4ea67ea722bcd52558c188e43e5f))
+
 ### Dependency updates
 
 - **deps:** Bump com.google.errorprone:error_prone_core ([#1](https://github.com/sneedit/deplens-gradle-plugin/issues/1)) ([825d8fc](https://github.com/sneedit/deplens-gradle-plugin/commit/825d8fcc719bdbecca19fe84e89477fbcd1571d2))

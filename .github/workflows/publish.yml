@@ -34,12 +34,12 @@ jobs:
     env:
       RELEASE_VERSION: ${{ inputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           java-version: '21'
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Check required publication secrets
         env:
           GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
@@ -77,13 +77,13 @@ jobs:
       - name: Verify and package signed Central bundle
         run: python3 scripts/publish-central.py bundle plugin/build/central-staging --version "$RELEASE_VERSION" --output build/central-bundle.zip
       - name: Retain signed Central bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: central-bundle
           path: build/central-bundle.zip
           if-no-files-found: error
       - name: Retain release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: published-plugin
           path: plugin/build/libs/*.jar
@@ -97,7 +97,7 @@ jobs:
     env:
       RELEASE_VERSION: ${{ inputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: central-bundle
@@ -109,7 +109,7 @@ jobs:
         run: python3 scripts/publish-central.py publish build/central-bundle.zip --version "$RELEASE_VERSION" --result build/central-publication.json
       - name: Retain Central deployment status
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: central-publication-status
           path: build/central-publication.json
@@ -122,12 +122,12 @@ jobs:
     env:
       RELEASE_VERSION: ${{ inputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           java-version: '21'
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Publish to Gradle Plugin Portal
         env:
           GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}

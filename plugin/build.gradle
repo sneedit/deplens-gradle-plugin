@@ -122,6 +122,8 @@ jacocoTestReport {
 }
 
 def repositoryUrl = providers.gradleProperty('repositoryUrl')
+// Resolve the compatibility helper locally; dynamic method lookup visits the parent on Gradle 8.
+def pluginCompatibility = extensions.extraProperties.get('compatibility')
 
 gradlePlugin {
     website = repositoryUrl
@@ -134,7 +136,7 @@ gradlePlugin {
             description = 'Gradle-native dependency, plugin and wrapper update checks with safe interactive version edits.'
             tags = ['dependencies', 'updates', 'versions', 'maintenance']
             implementationClass = 'com.sneedit.deplens.DepLensPlugin'
-            compatibility(it) {
+            pluginCompatibility.call(it) {
                 features {
                     configurationCache = true
                     isolatedProjects = true
@@ -147,7 +149,7 @@ gradlePlugin {
             description = 'Capture settings plugin versions and apply DepLens inventory, update checks and interactive edits to the root project.'
             tags = ['dependencies', 'updates', 'versions', 'maintenance']
             implementationClass = 'com.sneedit.deplens.DepLensSettingsPlugin'
-            compatibility(it) {
+            pluginCompatibility.call(it) {
                 features {
                     configurationCache = true
                     isolatedProjects = true

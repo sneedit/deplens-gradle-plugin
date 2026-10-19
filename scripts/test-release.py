@@ -57,8 +57,11 @@ def verify_publications(repository, version, repository_url):
             require('Implementation-Version: ' + version in manifest, 'Missing release version in manifest')
             if not suffix:
                 for plugin, entry in IDS.items():
-                    require('implementation-class=' + entry in jar.read(f'META-INF/gradle-plugins/{plugin}.properties').decode(),
-                            'Incorrect plugin descriptor')
+                    descriptor = jar.read(f'META-INF/gradle-plugins/{plugin}.properties').decode()
+                    require('implementation-class=' + entry in descriptor, 'Incorrect plugin descriptor')
+                    for feature in ('configuration-cache', 'isolated-projects'):
+                        require(f'compatibility.feature.{feature}=DECLARED_SUPPORTED' in descriptor,
+                                f'Missing {feature} compatibility declaration for {plugin}')
                     major = struct.unpack('>H', jar.read(entry.replace('.', '/') + '.class')[6:8])[0]
                     require(major == 65, 'Plugin bytecode must target Java 21')
                 require(not any(name.startswith('org/gradle/') for name in jar.namelist()), 'Gradle API classes leaked into plugin JAR')

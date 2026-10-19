@@ -22,7 +22,7 @@ jobs:
         with:
           java-version: '21'
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build and install the plugin locally
         run: ./gradlew :plugin:publishToMavenLocal -Pversion=0.1.0-SNAPSHOT --no-daemon --stacktrace
       - name: Run DepLens on its own build

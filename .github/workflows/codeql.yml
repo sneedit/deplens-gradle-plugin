@@ -42,7 +42,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Build
         # CodeQL must observe compilation instead of reusing cached task outputs.

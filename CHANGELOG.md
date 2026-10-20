@@ -6,6 +6,10 @@ Notable changes, generated from Conventional Commits by [git-cliff](https://git-
 
 [Compare changes](https://github.com/sneedit/deplens-gradle-plugin/compare/v0.1.0...HEAD)
 
+### Features
+
+- Add release script with version progression checks ([929806b](https://github.com/sneedit/deplens-gradle-plugin/commit/929806bf2a390dd34dda140f03adae2150a1b382))
+
 ### Bug fixes
 
 - Preserve isolated projects support on Gradle 8 ([c63cb91](https://github.com/sneedit/deplens-gradle-plugin/commit/c63cb915fbfe4ea67ea722bcd52558c188e43e5f))

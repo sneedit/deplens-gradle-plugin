@@ -5,7 +5,10 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
 import tempfile
 import unittest
 import zipfile
@@ -27,6 +30,122 @@ matrix = load('test-ci-matrix')
 worker = load('ci-matrix/run')
 release_artifacts = load('test-release')
 central = load('publish-central')
+
+
+class ReleaseScriptChecks(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.repository = self.root / 'checkout'
+        self.remote = self.root / 'remote.git'
+        self.env = {key: value for key, value in os.environ.items()
+                    if not key.startswith('GIT_')}
+        self.env.update(GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull,
+                        GIT_TERMINAL_PROMPT='0')
+        self.git('init', '--bare', str(self.remote), cwd=self.root)
+        self.git('init', '-b', 'main', str(self.repository), cwd=self.root)
+        self.git('config', 'user.name', 'Release Test')
+        self.git('config', 'user.email', 'release@example.invalid')
+        scripts = self.repository / 'scripts'
+        scripts.mkdir()
+        for name in ('release.sh', 'release-version.py'):
+            shutil.copy2(Path(__file__).parent / name, scripts / name)
+        self.git('add', '.')
+        self.git('commit', '-m', 'Initial commit')
+        self.git('remote', 'add', 'origin', str(self.remote))
+        self.git('push', '-u', 'origin', 'main')
+
+    def git(self, *args, cwd=None):
+        return subprocess.run(['git', *args], cwd=cwd or self.repository,
+                              env=self.env, check=True, capture_output=True, text=True).stdout.strip()
+
+    def release(self, *args):
+        return subprocess.run([str(self.repository / 'scripts/release.sh'), *args],
+                              cwd=self.root, env=self.env, capture_output=True, text=True)
+
+    def assert_rejected(self, message, *args):
+        result = self.release(*args)
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn(message, result.stdout + result.stderr)
+        self.assertEqual('', self.git('ls-remote', '--tags', 'origin'))
+
+    def test_release_pushes_annotated_tag_from_any_directory(self):
+        result = self.release('0.1.1')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual('tag', self.git('cat-file', '-t', 'v0.1.1'))
+        self.assertEqual(self.git('rev-parse', 'HEAD'), self.git('rev-parse', 'v0.1.1^{}'))
+        self.assertIn('refs/tags/v0.1.1', self.git('ls-remote', '--tags', 'origin'))
+
+    def test_invalid_arguments_do_not_create_tags(self):
+        for args in ((), ('v0.1.1',), ('0.1.1-rc1',), ('01.1.1',), ('0.1.1', 'extra')):
+            with self.subTest(args=args):
+                self.assert_rejected('Usage:' if len(args) != 1 else 'Expected a stable', *args)
+
+    def test_dirty_checkout_is_rejected(self):
+        (self.repository / 'untracked.txt').write_text('Uncommitted work')
+        self.assert_rejected('Commit or stash', '0.1.1')
+
+    def test_other_branch_and_detached_head_are_rejected(self):
+        self.git('checkout', '-b', 'feature')
+        self.assert_rejected('Switch to main', '0.1.1')
+        self.git('checkout', '--detach')
+        self.assert_rejected('Switch to main', '0.1.1')
+
+    def test_unpushed_commit_is_rejected(self):
+        self.git('commit', '--allow-empty', '-m', 'Unpushed change')
+        self.assert_rejected('must match origin/main', '0.1.1')
+
+    def test_remote_ahead_is_detected_by_fetch(self):
+        other = self.root / 'other'
+        self.git('clone', '-b', 'main', str(self.remote), str(other))
+        self.git('config', 'user.name', 'Other', cwd=other)
+        self.git('config', 'user.email', 'other@example.invalid', cwd=other)
+        self.git('commit', '--allow-empty', '-m', 'Remote change', cwd=other)
+        self.git('push', 'origin', 'main', cwd=other)
+        self.assert_rejected('must match origin/main', '0.1.1')
+
+    def test_existing_local_and_remote_tags_are_rejected(self):
+        self.git('tag', 'v0.1.1')
+        self.assert_rejected('Local tag v0.1.1 already exists', '0.1.1')
+        self.git('push', 'origin', 'v0.1.1')
+        self.git('tag', '-d', 'v0.1.1')
+        result = self.release('0.1.1')
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn('Remote tag v0.1.1 already exists', result.stderr)
+        self.assertEqual('', self.git('tag', '--list'))
+
+    def test_failed_push_retains_tag_and_reports_recovery(self):
+        hook = self.remote / 'hooks/pre-receive'
+        hook.write_text('#!/bin/sh\nexit 1\n')
+        hook.chmod(0o755)
+        self.assert_rejected('Local tag v0.1.1 was retained', '0.1.1')
+        self.assertEqual('tag', self.git('cat-file', '-t', 'v0.1.1'))
+
+    def push_remote_tags(self, *tags):
+        for tag in tags:
+            self.git('tag', '-a', tag, '-m', tag)
+            self.git('push', 'origin', 'refs/tags/' + tag)
+            self.git('tag', '-d', tag)
+
+    def test_lower_versions_are_rejected_without_creating_tags(self):
+        self.push_remote_tags('v1.9.9', 'v1.10.0', 'v0.99.99')
+        for version in ('1.9.10', '1.0.0', '0.100.0'):
+            with self.subTest(version=version):
+                result = self.release(version)
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn('must be higher than the latest stable remote tag v1.10.0', result.stderr)
+                self.assertEqual('', self.git('tag', '--list'))
+                self.assertEqual('', self.git('ls-remote', '--tags', 'origin', 'refs/tags/v' + version))
+
+    def test_higher_versions_use_numeric_order_and_ignore_prereleases(self):
+        self.push_remote_tags('v1.9.99', 'v2.0.0-rc1', 'v99.0.0-SNAPSHOT',
+                              'unrelated', '99.0.0', 'v01.0.0')
+        for version in ('1.10.0', '1.10.1', '2.0.0'):
+            with self.subTest(version=version):
+                result = self.release(version)
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertIn('refs/tags/v' + version, self.git('ls-remote', '--tags', 'origin'))
 
 
 class MatrixChecks(unittest.TestCase):

@@ -30,6 +30,16 @@ fi
 remote_tags=$(git ls-remote --refs --tags origin)
 printf '%s\n' "$remote_tags" | python3 scripts/release-version.py "$version" --check-remote-tags
 
+if python3 scripts/release-version.py "$version" --update-examples; then
+    :
+else
+    status=$?
+    if [ "$status" -eq 3 ]; then
+        fail "Example and CI versions updated to $version. Review, commit and push these changes, then rerun: ./scripts/release.sh $version"
+    fi
+    fail "Could not update example and CI versions; no release tag was created."
+fi
+
 git tag -a "$tag" "$commit" -m "Release $version"
 if ! git push origin "refs/tags/$tag:refs/tags/$tag"; then
     fail "Could not confirm the tag push. Local tag $tag was retained. Check the remote and Actions before retrying: git push origin refs/tags/$tag:refs/tags/$tag"

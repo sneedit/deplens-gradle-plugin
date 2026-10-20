@@ -427,8 +427,12 @@ version, fetches `origin/main`, rejects existing local or remote tags, and requi
 a version numerically higher than the highest stable `vX.Y.Z` tag on `origin`.
 Prerelease and unrelated tags are ignored; without stable remote tags, any valid
 version is accepted. Remote tags are the release baseline, including tags whose
-publication may still be running or have failed. The script then creates
-and pushes an annotated `vX.Y.Z` tag. Python 3, Git and push access to `origin`
+publication may still be running or have failed. The script automatically updates
+the plugin version in the three standalone examples and their local publication
+commands in the CI workflow and matrix runner. If files change, it stops without
+creating a commit or tag. Review, commit and push the changes, then rerun the same
+command. Once all versions match, the script creates and pushes an annotated
+`vX.Y.Z` tag. Python 3, Git and push access to `origin`
 are required. There is no confirmation prompt: pushing the tag starts publication.
 
 The Release workflow runs the compatibility matrix and artifact checks before

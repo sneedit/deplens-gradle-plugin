@@ -51,6 +51,14 @@ class ReleaseScriptChecks(unittest.TestCase):
         scripts.mkdir()
         for name in ('release.sh', 'release-version.py'):
             shutil.copy2(Path(__file__).parent / name, scripts / name)
+        source = Path(__file__).resolve().parents[1]
+        for name in ('examples/simple-java/build.gradle', 'examples/multi-module/build.gradle',
+                     'examples/kotlin-dsl/build.gradle.kts', '.github/workflows/build.yml',
+                     'scripts/ci-matrix/run.py'):
+            target = self.repository / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source / name, target)
+        release.update_examples(self.repository, '0.1.1')
         self.git('add', '.')
         self.git('commit', '-m', 'Initial commit')
         self.git('remote', 'add', 'origin', str(self.remote))
@@ -76,6 +84,39 @@ class ReleaseScriptChecks(unittest.TestCase):
         self.assertEqual('tag', self.git('cat-file', '-t', 'v0.1.1'))
         self.assertEqual(self.git('rev-parse', 'HEAD'), self.git('rev-parse', 'v0.1.1^{}'))
         self.assertIn('refs/tags/v0.1.1', self.git('ls-remote', '--tags', 'origin'))
+
+    def test_release_updates_versions_without_committing_or_tagging(self):
+        before = self.git('rev-parse', 'HEAD')
+        result = self.release('0.2.0')
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn('Review, commit and push', result.stderr)
+        self.assertEqual(before, self.git('rev-parse', 'HEAD'))
+        self.assertEqual('', self.git('tag', '--list'))
+        self.assertEqual('', self.git('ls-remote', '--tags', 'origin'))
+        changed = self.git('diff', '--name-only').splitlines()
+        self.assertEqual(5, len(changed))
+        for name in changed:
+            content = (self.repository / name).read_text()
+            self.assertIn('0.2.0', content)
+            self.assertNotIn('0.1.1', content)
+        self.assertEqual([], release.update_examples(self.repository, '0.2.0'))
+        self.git('add', '.')
+        self.git('commit', '-m', 'Prepare release versions')
+        self.git('push', 'origin', 'main')
+        result = self.release('0.2.0')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(self.git('rev-parse', 'HEAD'), self.git('rev-parse', 'v0.2.0^{}'))
+
+    def test_unexpected_target_prevents_all_version_edits(self):
+        target = self.repository / 'scripts/ci-matrix/run.py'
+        target.write_text('Unexpected layout\n')
+        before = self.git('diff')
+        with self.assertRaisesRegex(ValueError, 'expected exactly one'):
+            release.update_examples(self.repository, '0.2.0')
+        self.assertEqual(before, self.git('diff'))
+        with self.assertRaises(ValueError):
+            release.update_examples(self.repository, '0.2.0; invalid')
+        self.assertEqual(before, self.git('diff'))
 
     def test_invalid_arguments_do_not_create_tags(self):
         for args in ((), ('v0.1.1',), ('0.1.1-rc1',), ('01.1.1',), ('0.1.1', 'extra')):
@@ -143,6 +184,10 @@ class ReleaseScriptChecks(unittest.TestCase):
                               'unrelated', '99.0.0', 'v01.0.0')
         for version in ('1.10.0', '1.10.1', '2.0.0'):
             with self.subTest(version=version):
+                release.update_examples(self.repository, version)
+                self.git('add', '.')
+                self.git('commit', '-m', 'Prepare release versions')
+                self.git('push', 'origin', 'main')
                 result = self.release(version)
                 self.assertEqual(0, result.returncode, result.stderr)
                 self.assertIn('refs/tags/v' + version, self.git('ls-remote', '--tags', 'origin'))

@@ -181,7 +181,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Build plugin locally
-        run: ./gradlew publishToMavenLocal --no-daemon
+        run: ./gradlew publishToMavenLocal -Pversion=0.1.0 --no-daemon
 
       - name: Test simple-java example
         working-directory: examples/simple-java

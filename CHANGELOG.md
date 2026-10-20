@@ -13,11 +13,13 @@ Notable changes, generated from Conventional Commits by [git-cliff](https://git-
 ### Bug fixes
 
 - Preserve isolated projects support on Gradle 8 ([c63cb91](https://github.com/sneedit/deplens-gradle-plugin/commit/c63cb915fbfe4ea67ea722bcd52558c188e43e5f))
+- Synchronize example and CI versions before releases ([ec467a9](https://github.com/sneedit/deplens-gradle-plugin/commit/ec467a9bb3025ea287647f7aae4f0d261e94bd9e))
 
 ### Dependency updates
 
 - **deps:** Bump com.google.errorprone:error_prone_core ([#1](https://github.com/sneedit/deplens-gradle-plugin/issues/1)) ([825d8fc](https://github.com/sneedit/deplens-gradle-plugin/commit/825d8fcc719bdbecca19fe84e89477fbcd1571d2))
 - **deps:** Bump org.tomlj:tomlj from 1.1.1 to 2.2.0 ([#3](https://github.com/sneedit/deplens-gradle-plugin/issues/3)) ([3f5756f](https://github.com/sneedit/deplens-gradle-plugin/commit/3f5756f1e56757c4e97846e4ea173c31dd2b8462))
+- **deps:** Update Gradle to 9.8.2 and Develocity to 4.6.1 ([4a1fa04](https://github.com/sneedit/deplens-gradle-plugin/commit/4a1fa04ad1ecf60ba25b494c920599b829855ccf))
 
 ## [v0.1.0](https://github.com/sneedit/deplens-gradle-plugin/releases/tag/v0.1.0) - 2026-10-17
 

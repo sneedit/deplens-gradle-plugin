@@ -7,6 +7,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -191,6 +192,69 @@ class ReleaseScriptChecks(unittest.TestCase):
                 result = self.release(version)
                 self.assertEqual(0, result.returncode, result.stderr)
                 self.assertIn('refs/tags/v' + version, self.git('ls-remote', '--tags', 'origin'))
+
+
+class DevelopmentVersionChecks(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        source = Path(__file__).resolve().parents[1]
+        self.targets = ('gradle.properties', 'build.gradle', 'plugin/build.gradle',
+                        'scripts/ci-self-check.init.gradle', '.github/workflows/dependency-update.yml')
+        for name in self.targets:
+            target = self.root / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source / name, target)
+
+    def test_next_minor_snapshot_updates_all_references_and_is_idempotent(self):
+        before = {name: (self.root / name).read_bytes() for name in self.targets}
+        current = re.search(rb'(?m)^version=(.+)$', before['gradle.properties'])[1]
+        self.assertEqual(list(self.targets), release.advance_development_version(self.root, '2.9.3'))
+        for name in self.targets:
+            self.assertEqual(before[name].replace(current, b'2.10.0-SNAPSHOT'),
+                             (self.root / name).read_bytes())
+        self.assertEqual([], release.advance_development_version(self.root, '2.9.3'))
+        self.assertEqual([], release.advance_development_version(self.root, '1.99.0'))
+
+    def test_invalid_version_or_unexpected_target_prevents_all_writes(self):
+        (self.root / 'plugin/build.gradle').write_text('Unexpected layout\n')
+        before = {name: (self.root / name).read_bytes() for name in self.targets}
+        for value in ('v2.9.3', '2.9.3-SNAPSHOT', '2.9.3'):
+            with self.subTest(version=value), self.assertRaises(ValueError):
+                release.advance_development_version(self.root, value)
+            self.assertEqual(before, {name: (self.root / name).read_bytes() for name in self.targets})
+
+    def test_invalid_development_version_is_rejected(self):
+        for value in ('2.0.0', 'invalid-SNAPSHOT', '02.0.0-SNAPSHOT',
+                      '2.0.0-SNAPSHOT\nversion=3.0.0-SNAPSHOT'):
+            (self.root / 'gradle.properties').write_text(f'version={value}\n')
+            with self.subTest(version=value), self.assertRaises(ValueError):
+                release.advance_development_version(self.root, '2.9.3')
+
+    def test_workflow_command_updates_versions_and_reports_invalid_layout(self):
+        script = self.root / 'scripts/release-version.py'
+        shutil.copy2(Path(__file__).parent / 'release-version.py', script)
+        command = ['python3', str(script), '2.9.3', '--advance-development']
+        result = subprocess.run(command, capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('version=2.10.0-SNAPSHOT', (self.root / 'gradle.properties').read_text())
+        result = subprocess.run(command, capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('already up to date', result.stdout)
+        (self.root / 'gradle.properties').write_text('Unexpected layout\n')
+        result = subprocess.run(command, capture_output=True, text=True)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn('Error:', result.stderr)
+
+    def test_workflow_advances_only_after_release_and_before_changelog(self):
+        workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/release.yml').read_text()
+        development = workflow.split('  development-version:\n', 1)[1].split('  changelog:\n', 1)[0]
+        self.assertIn('needs: [version, release]', development)
+        self.assertIn('ref: main', development)
+        self.assertIn('--advance-development', development)
+        self.assertIn('git push origin HEAD:main', development)
+        self.assertIn('needs: [release, development-version]', workflow)
 
 
 class MatrixChecks(unittest.TestCase):

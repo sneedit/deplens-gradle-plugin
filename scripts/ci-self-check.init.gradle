@@ -2,7 +2,7 @@
 initscript {
     repositories { mavenLocal(); mavenCentral() }
     dependencies {
-        classpath "com.sneedit.deplens:plugin:${gradle.startParameter.projectProperties.getOrDefault('version', '0.1.0-SNAPSHOT')}"
+        classpath "com.sneedit.deplens:plugin:${gradle.startParameter.projectProperties.getOrDefault('version', '0.2.0-SNAPSHOT')}"
     }
 }
 gradle.rootProject { project ->

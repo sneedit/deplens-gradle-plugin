@@ -419,7 +419,7 @@ input or modifying sources.
 From a clean `main` branch matching `origin/main`, run:
 
 ```sh
-./scripts/release.sh 0.1.1
+./scripts/release.sh 0.2.0
 ```
 
 Pass a stable version `X.Y.Z` without a `v` prefix. The script validates the
@@ -437,8 +437,12 @@ are required. There is no confirmation prompt: pushing the tag starts publicatio
 
 The Release workflow runs the compatibility matrix and artifact checks before
 publishing to Maven Central and the Gradle Plugin Portal. It then creates the
-GitHub release with generated notes and updates the changelog. Configure the
-repository Actions secrets `GRADLE_PUBLISH_KEY`, `GRADLE_PUBLISH_SECRET`,
+GitHub release with generated notes, advances the development version on `main`
+to the next minor snapshot (for example, `0.2.0` → `0.3.0-SNAPSHOT`), and updates
+the changelog. The version bump includes the build defaults and dependency-check
+workflow, preserves a newer development version, and only runs after a successful
+release. Actions must have permission to push these commits to `main`.
+Configure the repository Actions secrets `GRADLE_PUBLISH_KEY`, `GRADLE_PUBLISH_SECRET`,
 `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`, `SIGNING_KEY` and
 `SIGNING_PASSWORD` beforehand. The version in `gradle.properties` can remain a
 snapshot; CI derives the release version from the tag.

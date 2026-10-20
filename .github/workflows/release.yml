@@ -77,9 +77,36 @@ jobs:
           RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: gh release create "$RELEASE_TAG" release-artifacts/*.jar --verify-tag --notes-file release-notes.md --title "Release $RELEASE_VERSION"
 
+  development-version:
+    name: Advance Development Version After Release
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Advance to the next minor snapshot and commit
+        env:
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python3 scripts/release-version.py "$RELEASE_VERSION" --advance-development
+          git add -- gradle.properties build.gradle plugin/build.gradle scripts/ci-self-check.init.gradle .github/workflows/dependency-update.yml
+          if git diff --cached --quiet; then
+            echo "Development version is already up to date."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "chore: advance development version after $RELEASE_VERSION"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
   changelog:
     name: Update Changelog After Release
-    needs: release
+    needs: [release, development-version]
     permissions:
       contents: write
       issues: read

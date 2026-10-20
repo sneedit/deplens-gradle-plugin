@@ -427,6 +427,11 @@ pushes to `main` and published/edited/deleted releases. It can also be started w
 **Run workflow**. The existing tag-driven release workflow calls it explicitly
 after publication, because events created with `GITHUB_TOKEN` do not start another
 workflow. Version selection, verification and plugin publication remain unchanged.
+GitHub release descriptions use the same git-cliff version and `cliff.toml` rules.
+The release workflow fetches the complete history and generates only the checked-out
+tag's notes with
+`git-cliff --config cliff.toml --latest --use-branch-tags --strip all`, then passes
+the generated file to `gh release create --notes-file`.
 Repository rules must allow `github-actions[bot]` to push changelog commits to the
 default branch. The workflow only commits when the generated content changes.
 

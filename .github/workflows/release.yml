@@ -56,6 +56,16 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Generate release notes from the tagged commit history
+        uses: orhun/git-cliff-action@v4
+        with:
+          version: v2.14.2
+          config: cliff.toml
+          args: --latest --use-branch-tags --strip all --output release-notes.md
+      - name: Verify changelog and release note rules
+        run: python3 scripts/test-changelog.py "$RUNNER_TEMP/git-cliff/bin/git-cliff"
       - uses: actions/download-artifact@v8
         with:
           name: published-plugin
@@ -65,7 +75,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
           RELEASE_VERSION: ${{ needs.version.outputs.version }}
-        run: gh release create "$RELEASE_TAG" release-artifacts/*.jar --verify-tag --generate-notes --title "Release $RELEASE_VERSION"
+        run: gh release create "$RELEASE_TAG" release-artifacts/*.jar --verify-tag --notes-file release-notes.md --title "Release $RELEASE_VERSION"
 
   changelog:
     name: Update Changelog After Release

@@ -87,27 +87,50 @@ class ReleaseScriptChecks(unittest.TestCase):
         self.assertEqual(self.git('rev-parse', 'HEAD'), self.git('rev-parse', 'v0.1.1^{}'))
         self.assertIn('refs/tags/v0.1.1', self.git('ls-remote', '--tags', 'origin'))
 
-    def test_release_updates_versions_without_committing_or_tagging(self):
+    def test_release_prepares_commits_and_pushes_versions_and_tag_in_one_call(self):
         before = self.git('rev-parse', 'HEAD')
         result = self.release('0.2.0')
-        self.assertNotEqual(0, result.returncode)
-        self.assertIn('Review, commit and push', result.stderr)
-        self.assertEqual(before, self.git('rev-parse', 'HEAD'))
-        self.assertEqual('', self.git('tag', '--list'))
-        self.assertEqual('', self.git('ls-remote', '--tags', 'origin'))
-        changed = self.git('diff', '--name-only').splitlines()
+        self.assertEqual(0, result.returncode, result.stderr)
+        prepared = self.git('rev-parse', 'HEAD')
+        self.assertNotEqual(before, prepared)
+        self.assertEqual('chore: prepare release 0.2.0', self.git('log', '-1', '--format=%s'))
+        self.assertEqual(before, self.git('rev-parse', 'HEAD^'))
+        self.assertEqual(prepared, self.git('rev-parse', 'v0.2.0^{}'))
+        self.assertEqual(prepared, self.git('ls-remote', 'origin', 'refs/heads/main').split()[0])
+        self.assertEqual(prepared, self.git('ls-remote', 'origin', 'refs/tags/v0.2.0^{}').split()[0])
+        self.assertEqual('', self.git('status', '--porcelain'))
+        changed = self.git('diff', '--name-only', before, prepared).splitlines()
         self.assertEqual(5, len(changed))
         for name in changed:
             content = (self.repository / name).read_text()
             self.assertIn('0.2.0', content)
             self.assertNotIn('0.1.1', content)
         self.assertEqual([], release.update_examples(self.repository, '0.2.0'))
-        self.git('add', '.')
-        self.git('commit', '-m', 'Prepare release versions')
-        self.git('push', 'origin', 'main')
+
+    def test_failed_preparation_commit_does_not_create_or_publish_tag(self):
+        before = self.git('rev-parse', 'HEAD')
+        hook = self.repository / '.git/hooks/pre-commit'
+        hook.write_text('#!/bin/sh\nexit 1\n')
+        hook.chmod(0o755)
         result = self.release('0.2.0')
-        self.assertEqual(0, result.returncode, result.stderr)
-        self.assertEqual(self.git('rev-parse', 'HEAD'), self.git('rev-parse', 'v0.2.0^{}'))
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(before, self.git('rev-parse', 'HEAD'))
+        self.assertEqual(before, self.git('ls-remote', 'origin', 'refs/heads/main').split()[0])
+        self.assertEqual('', self.git('tag', '--list'))
+        self.assertEqual('', self.git('ls-remote', '--tags', 'origin'))
+
+    def test_rejected_preparation_push_does_not_publish_main_or_tag(self):
+        before = self.git('rev-parse', 'HEAD')
+        hook = self.remote / 'hooks/pre-receive'
+        hook.write_text('#!/bin/sh\nwhile read old new ref; do\n'
+                        '  if [ "$ref" = refs/heads/main ]; then exit 1; fi\ndone\n')
+        hook.chmod(0o755)
+        self.assert_rejected('Could not confirm the atomic release push', '0.2.0')
+        prepared = self.git('rev-parse', 'HEAD')
+        self.assertNotEqual(before, prepared)
+        self.assertEqual(before, self.git('ls-remote', 'origin', 'refs/heads/main').split()[0])
+        self.assertEqual(prepared, self.git('rev-parse', 'v0.2.0^{}'))
+        self.assertEqual('', self.git('status', '--porcelain'))
 
     def test_unexpected_target_prevents_all_version_edits(self):
         target = self.repository / 'scripts/ci-matrix/run.py'
@@ -202,7 +225,7 @@ class DevelopmentVersionChecks(unittest.TestCase):
         self.root = Path(self.directory.name)
         source = Path(__file__).resolve().parents[1]
         self.targets = ('gradle.properties', 'build.gradle', 'plugin/build.gradle',
-                        'scripts/ci-self-check.init.gradle', '.github/workflows/dependency-update.yml')
+                        'scripts/ci-self-check.init.gradle')
         for name in self.targets:
             target = self.root / name
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -217,6 +240,23 @@ class DevelopmentVersionChecks(unittest.TestCase):
                              (self.root / name).read_bytes())
         self.assertEqual([], release.advance_development_version(self.root, '2.9.3'))
         self.assertEqual([], release.advance_development_version(self.root, '1.99.0'))
+
+    def test_dependency_workflow_is_not_changed_by_development_bump(self):
+        source = Path(__file__).resolve().parents[1]
+        workflow = self.root / '.github/workflows/dependency-update.yml'
+        workflow.parent.mkdir(parents=True)
+        shutil.copy2(source / '.github/workflows/dependency-update.yml', workflow)
+        before = workflow.read_bytes()
+        changed = release.advance_development_version(self.root, '2.9.3')
+        self.assertFalse(any(name.startswith('.github/') for name in changed))
+        self.assertEqual(before, workflow.read_bytes())
+        content = workflow.read_text()
+        self.assertNotIn('-Pversion=', content)
+        self.assertNotIn('-SNAPSHOT', content)
+        self.assertIn('./gradlew :plugin:publishToMavenLocal --no-daemon', content)
+        self.assertIn('--init-script scripts/ci-self-check.init.gradle depLensCheck --no-daemon', content)
+        self.assertIn("getOrDefault('version', '2.10.0-SNAPSHOT')",
+                      (self.root / 'scripts/ci-self-check.init.gradle').read_text())
 
     def test_invalid_version_or_unexpected_target_prevents_all_writes(self):
         (self.root / 'plugin/build.gradle').write_text('Unexpected layout\n')
@@ -255,6 +295,8 @@ class DevelopmentVersionChecks(unittest.TestCase):
         self.assertIn('ref: main', development)
         self.assertIn('--advance-development', development)
         self.assertIn('git push origin HEAD:main', development)
+        staging = next(line for line in development.splitlines() if 'git add --' in line)
+        self.assertNotIn('.github/', staging)
         self.assertIn('needs: [release, development-version]', workflow)
 
 

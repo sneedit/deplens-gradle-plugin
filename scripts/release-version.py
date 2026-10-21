@@ -74,15 +74,13 @@ def advance_development_version(root, value):
         'build.gradle': f"getOrElse('{current}')",
         'plugin/build.gradle': f"getOrElse('{current}')",
         'scripts/ci-self-check.init.gradle': f"getOrDefault('version', '{current}')",
-        '.github/workflows/dependency-update.yml': f'-Pversion={current}',
     }
     changes = []
     for name, marker in targets.items():
         path = root / name
         original = path.read_bytes().decode('utf-8')
-        expected = 2 if name.endswith('dependency-update.yml') else 1
-        if original.count(marker) != expected:
-            raise ValueError(f'{name}: expected {expected} development version references.')
+        if original.count(marker) != 1:
+            raise ValueError(f'{name}: expected 1 development version reference.')
         changes.append((path, original.replace(marker, marker.replace(current, next_version))))
     for path, updated in changes:
         path.write_bytes(updated.encode('utf-8'))

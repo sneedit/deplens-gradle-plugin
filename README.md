@@ -430,26 +430,31 @@ Prerelease and unrelated tags are ignored; without stable remote tags, any valid
 version is accepted. Remote tags are the release baseline, including tags whose
 publication may still be running or have failed. The script automatically updates
 the plugin version in the three standalone examples and their local publication
-commands in the CI workflow and matrix runner. If files change, it stops without
-creating a commit or tag. Review, commit and push the changes, then rerun the same
-command. Once all versions match, the script creates and pushes an annotated
-`vX.Y.Z` tag. Python 3, Git and push access to `origin`
+commands in the CI workflow and matrix runner. If files change, it stages those
+five files and creates a `chore: prepare release X.Y.Z` commit automatically.
+In the same invocation, it creates an annotated `vX.Y.Z` tag on the prepared commit
+and atomically pushes both `main` and the tag. If either ref is rejected, neither
+remote ref is updated. If versions already match, it tags the current commit
+without creating another preparation commit. Python 3, Git and push access to `origin`
 are required. There is no confirmation prompt: pushing the tag starts publication.
 
 The Release workflow runs the compatibility matrix and artifact checks before
 publishing to Maven Central and the Gradle Plugin Portal. It then creates the
 GitHub release with generated notes, advances the development version on `main`
 to the next minor snapshot (for example, `0.2.0` → `0.3.0-SNAPSHOT`), and updates
-the changelog. The version bump includes the build defaults and dependency-check
-workflow, preserves a newer development version, and only runs after a successful
-release. Actions must have permission to push these commits to `main`.
+the changelog. The version bump updates `gradle.properties`, the build defaults
+and the self-check bootstrap, preserves a newer development version, and only runs after a successful
+release. The dependency-check workflow uses the project version from
+`gradle.properties`; the bump does not edit workflow files or require permission
+to modify them. Actions must have permission to push these commits to `main`.
 Configure the repository Actions secrets `GRADLE_PUBLISH_KEY`, `GRADLE_PUBLISH_SECRET`,
 `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`, `SIGNING_KEY` and
 `SIGNING_PASSWORD` beforehand. The version in `gradle.properties` can remain a
 snapshot; CI derives the release version from the tag.
 
-If pushing fails, the script retains the local tag and prints the retry command.
-Check the remote tag and Actions first, since the push may have reached GitHub.
+If pushing fails, the script retains the local preparation commit (if any) and tag
+and prints the atomic retry command. Check `origin/main`, the remote tag and
+Actions first, since the push may have reached GitHub.
 
 ### Changelog generation
 

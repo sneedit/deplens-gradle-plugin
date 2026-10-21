@@ -93,7 +93,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: |
           python3 scripts/release-version.py "$RELEASE_VERSION" --advance-development
-          git add -- gradle.properties build.gradle plugin/build.gradle scripts/ci-self-check.init.gradle .github/workflows/dependency-update.yml
+          git add -- gradle.properties build.gradle plugin/build.gradle scripts/ci-self-check.init.gradle
           if git diff --cached --quiet; then
             echo "Development version is already up to date."
             exit 0

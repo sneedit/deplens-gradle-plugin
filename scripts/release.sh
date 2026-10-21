@@ -35,14 +35,18 @@ if python3 scripts/release-version.py "$version" --update-examples; then
 else
     status=$?
     if [ "$status" -eq 3 ]; then
-        fail "Example and CI versions updated to $version. Review, commit and push these changes, then rerun: ./scripts/release.sh $version"
+        git add -- examples/simple-java/build.gradle examples/multi-module/build.gradle \
+            examples/kotlin-dsl/build.gradle.kts .github/workflows/build.yml scripts/ci-matrix/run.py
+        git commit -m "chore: prepare release $version"
+    else
+        fail "Could not update example and CI versions; no release tag was created."
     fi
-    fail "Could not update example and CI versions; no release tag was created."
 fi
 
+commit=$(git rev-parse HEAD)
 git tag -a "$tag" "$commit" -m "Release $version"
-if ! git push origin "refs/tags/$tag:refs/tags/$tag"; then
-    fail "Could not confirm the tag push. Local tag $tag was retained. Check the remote and Actions before retrying: git push origin refs/tags/$tag:refs/tags/$tag"
+if ! git push --atomic origin "$commit:refs/heads/main" "refs/tags/$tag:refs/tags/$tag"; then
+    fail "Could not confirm the atomic release push. Local tag $tag was retained. Check origin/main, the remote tag and Actions before retrying: git push --atomic origin $commit:refs/heads/main refs/tags/$tag:refs/tags/$tag"
 fi
 echo "Release $version triggered for commit $commit."
 echo "Follow verification and publication in GitHub Actions (Release workflow)."

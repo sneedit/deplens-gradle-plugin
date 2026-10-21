@@ -1,0 +1,26 @@
+# Deliberately older example versions make update discovery visible.
+[versions]
+slf4j = "2.0.13"
+jackson = "2.17.1"
+junit = "5.10.2"
+compression = "1.5.6-3"
+
+[libraries]
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
+jackson-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+zstd = { module = "com.github.luben:zstd-jni", version.ref = "compression" }
+lz4 = { module = "at.yawk.lz4:lz4-java", version = "1.10.1" }
+snappy = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.5" }
+metrics = { module = "io.dropwizard.metrics:metrics-core", version = "4.2.25" }
+rocksdb = { module = "org.rocksdb:rocksdbjni", version = "9.2.1" }
+picocli = { module = "info.picocli:picocli", version = "4.7.6" }
+
+[bundles]
+compression = ["zstd", "lz4", "snappy"]
+json = ["jackson-databind", "jackson-jdk8"]

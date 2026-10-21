@@ -27,6 +27,7 @@ def load(name):
 report = load('ci-report')
 release = load('release-version')
 isolated = load('test-isolated-example')
+complex_example = load('test-complex-example')
 matrix = load('test-ci-matrix')
 worker = load('ci-matrix/run')
 release_artifacts = load('test-release')
@@ -353,6 +354,27 @@ class MatrixChecks(unittest.TestCase):
             self.assertEqual(code, outcome)
             self.assertEqual(5, calls)
             self.assertIn(('PASS' if code == 0 else 'FAIL') + '  examples', summary)
+
+
+class ComplexExampleCacheChecks(unittest.TestCase):
+    def test_accepts_stored_then_reused_cache(self):
+        complex_example.verify_cache('Configuration cache entry stored.',
+                                     'Reusing configuration cache.\nConfiguration cache entry reused.')
+
+    def test_rejects_first_run_without_fresh_cache(self):
+        with self.assertRaisesRegex(ValueError, 'First run did not store'):
+            complex_example.verify_cache('Configuration cache entry reused.',
+                                         'Reusing configuration cache.\nConfiguration cache entry reused.')
+
+    def test_rejects_missing_reuse_and_recalculated_task_graph(self):
+        for second_log in (
+                'BUILD SUCCESSFUL',
+                'Calculating task graph\nConfiguration cache entry stored.',
+                'Reusing configuration cache.',
+                'Configuration cache entry reused.',
+                'Reusing configuration cache.\nCalculating task graph\nConfiguration cache entry reused.'):
+            with self.subTest(log=second_log), self.assertRaisesRegex(ValueError, 'Second run did not reuse'):
+                complex_example.verify_cache('Configuration cache entry stored.', second_log)
 
 
 class CiChecks(unittest.TestCase):

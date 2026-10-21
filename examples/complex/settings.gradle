@@ -1,0 +1,19 @@
+pluginManagement {
+    includeBuild('../..')
+}
+
+plugins {
+    id 'com.sneedit.deplens.settings'
+}
+
+rootProject.name = 'complex-dependency-example'
+include 'platform', 'clients', 'server-common', 'metadata', 'storage', 'core',
+        'streams', 'connect:api', 'connect:runtime', 'tools'
+
+// Representative historical release lines, each with its own update boundary.
+include 'streams:upgrade-system-tests-0110'
+include 'streams:upgrade-system-tests-10'
+include 'streams:upgrade-system-tests-20'
+include 'streams:upgrade-system-tests-28'
+include 'streams:upgrade-system-tests-39'
+include 'streams:upgrade-system-tests-40'

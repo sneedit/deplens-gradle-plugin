@@ -1,0 +1,29 @@
+plugins {
+    id 'base'
+}
+
+// Root rules are inherited by every module through the DepLens settings plugin.
+depLens {
+    rules {
+        global { includePreReleases = false; allowedUpdates = 'minor' }
+        group('com.fasterxml.jackson.core') { allowedUpdates = 'patch' }
+        dependency('org.slf4j:slf4j-api') { pinned = true }
+        project(':clients') { allowedUpdates = 'patch' }
+
+        // ApacheDS changed its milestone suffix from -M24 to .AM25 and later.
+        dependency('org.apache.directory.server:apacheds-core-api') {
+            versionNormalizationPattern = /[.]AM(?=[0-9]+$)/
+            versionNormalizationReplacement = '-M'
+            preReleasePattern = /(?i)[.-](?:AM|M)[0-9]+$/
+            includePreReleases = true
+        }
+
+        // Keep each upgrade scenario on its original release line.
+        project(':streams:upgrade-system-tests-0110') { allowedUpdates = 'patch' }
+        project(':streams:upgrade-system-tests-10') { allowedUpdates = 'patch' }
+        project(':streams:upgrade-system-tests-20') { allowedUpdates = 'patch' }
+        project(':streams:upgrade-system-tests-28') { allowedUpdates = 'patch' }
+        project(':streams:upgrade-system-tests-39') { allowedUpdates = 'patch' }
+        project(':streams:upgrade-system-tests-40') { allowedUpdates = 'patch' }
+    }
+}

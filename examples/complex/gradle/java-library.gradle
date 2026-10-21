@@ -1,0 +1,17 @@
+// Each module configures itself without accessing another project's model.
+apply plugin: 'java-library'
+
+group = 'com.example.eventlog'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}

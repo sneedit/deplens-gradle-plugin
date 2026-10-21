@@ -402,6 +402,7 @@ input or modifying sources.
 ## Examples and reference
 
 - [Example builds](examples): Java, Kotlin DSL, multi-module and isolated composite builds.
+- [Complex dependency build](examples/complex): a larger module graph with a shared version catalog, BOMs, a Java platform, compression, storage, Streams and Connect dependencies, and patch-only upgrade scenarios.
 - [Configuration](https://deplens.sneedit.com/configuration/): every option, supported rule scope and Kotlin/Groovy examples.
 - [Behavior reference](https://deplens.sneedit.com/reference/): resolution details, version patterns, normalization and Gradle compatibility.
 - [Changelog](CHANGELOG.md) · [Issues](https://github.com/sneedit/deplens-gradle-plugin/issues)

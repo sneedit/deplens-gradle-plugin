@@ -1,0 +1,29 @@
+plugins {
+    id 'java-platform'
+}
+
+repositories {
+    mavenCentral()
+}
+
+javaPlatform {
+    allowDependencies()
+}
+
+// A platform normally has no library classpath of its own. Resolve its
+// constraints here too so DepLens can compare their current versions locally.
+configurations {
+    platformClasspath {
+        canBeConsumed = false
+        canBeResolved = true
+        extendsFrom configurations.api
+    }
+}
+
+dependencies {
+    api platform(libs.jackson.bom)
+    platformClasspath libs.metrics
+    constraints {
+        api libs.metrics
+    }
+}

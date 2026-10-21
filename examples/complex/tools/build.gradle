@@ -1,0 +1,15 @@
+apply from: new File(rootDir, 'gradle/java-library.gradle')
+
+dependencies {
+    implementation platform(project(':platform'))
+    implementation libs.slf4j.api
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.launcher
+
+    implementation project(':clients')
+    implementation project(':streams')
+    implementation project(':connect:api')
+    implementation libs.picocli
+    runtimeOnly libs.slf4j.simple
+}

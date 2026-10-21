@@ -201,6 +201,16 @@ jobs:
           ../../gradlew :depLensInventory :depLensCheckDependencies --no-daemon --stacktrace
           echo "Kotlin DSL example completed"
 
+      - name: Test complex dependency example and Configuration Cache reuse
+        run: python3 scripts/test-complex-example.py ./gradlew
+
+      - name: Upload complex example cache logs
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: complex-example-cache-logs
+          path: examples/complex/build/reports/complex-example/*.log
+
   code-quality:
     name: Code Quality Checks
     runs-on: ubuntu-latest

@@ -1,0 +1,20 @@
+apply from: new File(rootDir, 'gradle/java-library.gradle')
+
+// Resolve the historical release independently of the current :streams module.
+// A project dependency on :streams would mix the old and current classpaths.
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven { url = uri(new File(rootDir, 'build/fixture-repository')) }
+        }
+        filter { includeModule('com.example.eventlog', 'streams-compat') }
+    }
+}
+
+dependencies {
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.launcher
+
+    testImplementation 'com.example.eventlog:streams-compat:3.9.0'
+}

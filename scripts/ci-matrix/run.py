@@ -88,6 +88,7 @@ def main():
                 commands += [['./gradlew', '-p', f'examples/{name}', ':depLensInventory',
                               ':depLensCheckDependencies', '--no-daemon', '--stacktrace']
                              for name in ('simple-java', 'multi-module', 'kotlin-dsl')]
+                commands += [['python3', 'scripts/test-complex-example.py', './gradlew']]
             else:
                 executable = install_gradle(gradle)
                 # Console helpers require an absolute executable path.

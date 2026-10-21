@@ -9,6 +9,7 @@ Notable changes, generated from Conventional Commits by [git-cliff](https://git-
 ### Features
 
 - Add release script with version progression checks ([929806b](https://github.com/sneedit/deplens-gradle-plugin/commit/929806bf2a390dd34dda140f03adae2150a1b382))
+- Add complex dependency example with cache reuse verification ([d6a59fb](https://github.com/sneedit/deplens-gradle-plugin/commit/d6a59fb42a9f243acf99c57cbf50a4a103cab04c))
 
 ### Bug fixes
 

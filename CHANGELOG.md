@@ -4,7 +4,15 @@ Notable changes, generated from Conventional Commits by [git-cliff](https://git-
 
 ## Unreleased
 
-[Compare changes](https://github.com/sneedit/deplens-gradle-plugin/compare/v0.1.0...HEAD)
+[Compare changes](https://github.com/sneedit/deplens-gradle-plugin/compare/v0.2.0...HEAD)
+
+### Bug fixes
+
+- Simplify release preparation and development version bump ([e130981](https://github.com/sneedit/deplens-gradle-plugin/commit/e130981a1643b92fb657c9038e10e29bc5925fe8))
+
+## [v0.2.0](https://github.com/sneedit/deplens-gradle-plugin/releases/tag/v0.2.0) - 2026-10-21
+
+[Compare changes](https://github.com/sneedit/deplens-gradle-plugin/compare/v0.1.0...v0.2.0)
 
 ### Features
 

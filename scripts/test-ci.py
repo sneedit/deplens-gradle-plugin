@@ -301,8 +301,35 @@ class DevelopmentVersionChecks(unittest.TestCase):
 
 
 class MatrixChecks(unittest.TestCase):
+    # Parser/runner fixtures stay independent of dependency updates in the live workflow.
+    WORKFLOW = """      matrix:
+        include:
+          - gradle: '8.8'
+            java: '21'
+          - gradle: '8.14'
+            java: '21'
+          - gradle: '9.8.1'
+            java: '21'
+          - gradle: '9.8.1'
+            java: '25'
+
+    steps:
+"""
+
+    def test_live_workflow_has_a_valid_nonempty_matrix(self):
+        workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/build.yml').read_text()
+        entries = matrix.read_matrix(workflow)
+        self.assertTrue(entries)
+        self.assertEqual(len(entries), len(set(entries)))
+
+    def test_gradle_updates_and_additional_combinations_are_accepted(self):
+        workflow = self.WORKFLOW.replace('9.8.1', '9.9.2').replace(
+            '\n    steps:', "\n          - gradle: '10.0.0'\n            java: '25'\n\n    steps:")
+        self.assertEqual([('8.8', '21'), ('8.14', '21'), ('9.9.2', '21'),
+                          ('9.9.2', '25'), ('10.0.0', '25')], matrix.read_matrix(workflow))
+
     def test_matrix_matches_workflow_and_rejects_unknown_fields(self):
-        workflow = (Path(__file__).resolve().parent.parent / '.github/workflows/build.yml').read_text()
+        workflow = self.WORKFLOW
         entries = matrix.read_matrix(workflow)
         self.assertEqual([('8.8', '21'), ('8.14', '21'), ('9.8.1', '21'), ('9.8.1', '25')], entries)
         with self.assertRaises(ValueError):
@@ -351,13 +378,16 @@ class MatrixChecks(unittest.TestCase):
             with self.assertRaises(FileNotFoundError):
                 release_artifacts.verify_publications(Path(directory), '0.1.0', 'https://github.com/sneedit/deplens-gradle-plugin')
 
-    def run_matrix(self, codes, arguments=()):
+    def fixture_root(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         root = Path(directory.name)
         (root / '.github/workflows').mkdir(parents=True)
-        workflow = Path(__file__).resolve().parent.parent / '.github/workflows/build.yml'
-        (root / '.github/workflows/build.yml').write_text(workflow.read_text())
+        (root / '.github/workflows/build.yml').write_text(self.WORKFLOW)
+        return root
+
+    def run_matrix(self, codes, arguments=()):
+        root = self.fixture_root()
         with patch.object(matrix, 'ROOT', root), patch.object(matrix.subprocess, 'run'), \
                 patch.object(matrix, 'stream', side_effect=codes) as stream, \
                 patch('sys.argv', ['test-ci-matrix.py', *arguments]), contextlib.redirect_stdout(io.StringIO()):
@@ -377,6 +407,7 @@ class MatrixChecks(unittest.TestCase):
                           ['--gradle', '8.8', '--java', '25']):
             with patch('sys.argv', ['test-ci-matrix.py', *arguments]), \
                     patch.object(matrix.subprocess, 'run') as docker, \
+                    patch.object(matrix, 'ROOT', self.fixture_root()), \
                     contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
                 matrix.main()
             self.assertEqual(2, error.exception.code)

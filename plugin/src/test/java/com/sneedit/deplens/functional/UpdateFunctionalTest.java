@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.testkit.runner.UnexpectedBuildFailure;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -1745,22 +1746,22 @@ class UpdateFunctionalTest {
      */
     @Test
     void springBootAlignsProtobufToolsButExplicitToolVersionsRemainIndependent() throws Exception {
-        org.junit.jupiter.api.Assumptions.assumeTrue(org.gradle.util.GradleVersion.version(System.getProperty("deplens.test.gradleVersion"))
-                .compareTo(org.gradle.util.GradleVersion.version("8.14")) >= 0, "Spring Boot 4.1 requires Gradle 8.14+");
         for (String coordinate : List.of("com.google.protobuf:protobuf-java", "com.google.protobuf:protoc",
                 "io.grpc:grpc-util", "io.grpc:protoc-gen-grpc-java")) {
             String[] parts = coordinate.split(":");
             modules(parts[0], parts[1], "1.0.0", "1.1.0", "2.0.0");
         }
-        modules("org.springframework.boot", "spring-boot-dependencies", "4.1.1");
-        write("repo/org/springframework/boot/spring-boot-dependencies/4.1.1/spring-boot-dependencies-4.1.1.pom", """
-                <project><modelVersion>4.0.0</modelVersion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-dependencies</artifactId><version>4.1.1</version><packaging>pom</packaging>
+        String springBootVersion = System.getProperty("deplens.test.springBootVersion");
+        modules("org.springframework.boot", "spring-boot-dependencies", springBootVersion);
+        write("repo/org/springframework/boot/spring-boot-dependencies/%s/spring-boot-dependencies-%s.pom"
+                .formatted(springBootVersion, springBootVersion), """
+                <project><modelVersion>4.0.0</modelVersion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-dependencies</artifactId><version>%s</version><packaging>pom</packaging>
                 <dependencyManagement><dependencies>
                 <dependency><groupId>com.google.protobuf</groupId><artifactId>protobuf-java</artifactId><version>1.0.0</version></dependency>
                 <dependency><groupId>io.grpc</groupId><artifactId>grpc-util</artifactId><version>1.0.0</version></dependency>
                 <dependency><groupId>io.grpc</groupId><artifactId>protoc-gen-grpc-java</artifactId><version>1.0.0</version></dependency>
                 </dependencies></dependencyManagement></project>
-                """);
+                """.formatted(springBootVersion));
         String classpath = Arrays.stream(System.getProperty("deplens.test.springProtobufClasspath").split(java.io.File.pathSeparator))
                 .map(path -> "'" + path.replace("\\", "\\\\").replace("'", "\\'") + "'")
                 .collect(java.util.stream.Collectors.joining(", "));
@@ -1775,7 +1776,7 @@ class UpdateFunctionalTest {
                 dependencies { implementation 'com.google.protobuf:protobuf-java'; implementation 'io.grpc:grpc-util' }
                 depLens { rules { gradle { pinned = true } } }
                 """.formatted(classpath));
-        String output = plain(run("depLensCheck"));
+        String output = plain(runWithSpringBoot("depLensCheck"));
         JsonObject report = report("depLensCheck");
         assertThat(report.get("checksComplete").getAsBoolean()).isTrue();
         for (String coordinate : List.of("com.google.protobuf:protoc", "io.grpc:protoc-gen-grpc-java")) {
@@ -1823,24 +1824,23 @@ class UpdateFunctionalTest {
      */
     @Test
     void springBootKotlinAlignmentPreservesOverridesAndPluginUpdates() throws Exception {
-        org.junit.jupiter.api.Assumptions.assumeTrue(org.gradle.util.GradleVersion.version(System.getProperty("deplens.test.gradleVersion"))
-                .compareTo(org.gradle.util.GradleVersion.version("8.14")) >= 0, "Spring Boot 4.1 requires Gradle 8.14+");
         String kotlinVersion = System.getProperty("deplens.test.kotlinVersion");
-        String[] versionParts = kotlinVersion.split("\\.");
-        String updateVersion = versionParts[0] + "." + versionParts[1] + "." + (Integer.parseInt(versionParts[2]) + 1);
+        String updateVersion = IntegrationTestVersions.nextPatch(kotlinVersion);
         String update = kotlinVersion + " → " + updateVersion;
         for (String module : List.of("kotlin-stdlib", "kotlin-reflect", "explicit"))
             modules("org.jetbrains.kotlin", module, "2.1.0", kotlinVersion, updateVersion);
-        modules("org.springframework.boot", "spring-boot-dependencies", "4.1.1");
+        String springBootVersion = System.getProperty("deplens.test.springBootVersion");
+        modules("org.springframework.boot", "spring-boot-dependencies", springBootVersion);
         modules("org.jetbrains.kotlin.jvm", "org.jetbrains.kotlin.jvm.gradle.plugin", kotlinVersion, updateVersion);
-        write("repo/org/springframework/boot/spring-boot-dependencies/4.1.1/spring-boot-dependencies-4.1.1.pom", """
-                <project><modelVersion>4.0.0</modelVersion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-dependencies</artifactId><version>4.1.1</version><packaging>pom</packaging>
+        write("repo/org/springframework/boot/spring-boot-dependencies/%s/spring-boot-dependencies-%s.pom"
+                .formatted(springBootVersion, springBootVersion), """
+                <project><modelVersion>4.0.0</modelVersion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-dependencies</artifactId><version>%s</version><packaging>pom</packaging>
                 <properties><kotlin.version>2.1.0</kotlin.version></properties><dependencyManagement><dependencies>
                 <dependency><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-stdlib</artifactId><version>${kotlin.version}</version></dependency>
                 <dependency><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-reflect</artifactId><version>${kotlin.version}</version></dependency>
                 <dependency><groupId>org.jetbrains.kotlin</groupId><artifactId>explicit</artifactId><version>${kotlin.version}</version></dependency>
                 </dependencies></dependencyManagement></project>
-                """);
+                """.formatted(springBootVersion));
         String classpath = Arrays.stream(System.getProperty("deplens.test.springKotlinClasspath").split(java.io.File.pathSeparator))
                 .map(path -> "'" + path.replace("\\", "\\\\").replace("'", "\\'") + "'").collect(java.util.stream.Collectors.joining(", "));
         write("build.gradle", """
@@ -1864,7 +1864,7 @@ class UpdateFunctionalTest {
                 }
                 depLens { rules { gradle { pinned = true } } }
                 """.formatted(classpath, kotlinVersion, kotlinVersion));
-        String output = plain(run("depLensCheck"));
+        String output = plain(runWithSpringBoot("depLensCheck"));
         JsonObject report = report("depLensCheck");
         // Compiler tool configurations are intentionally unresolved in this metadata-only fixture.
         assertThat(report.getAsJsonArray("warnings").toString()).withFailMessage("%s", output).doesNotContain("Spring BOM provenance unavailable", "Update query failed");
@@ -1917,6 +1917,17 @@ class UpdateFunctionalTest {
         arguments.addAll(List.of(options));
         return GradleRunner.create().withGradleVersion(System.getProperty("deplens.test.gradleVersion"))
                 .withProjectDir(dir.toFile()).withPluginClasspath().withArguments(arguments).build();
+    }
+
+    /** Skips only Gradle versions explicitly rejected by the loaded Spring Boot plugin. */
+    private BuildResult runWithSpringBoot(String task) {
+        try {
+            return run(task);
+        } catch (UnexpectedBuildFailure failure) {
+            String reason = IntegrationTestVersions.springBootGradleRejection(failure.getBuildResult().getOutput());
+            org.junit.jupiter.api.Assumptions.assumeTrue(reason == null, reason);
+            throw failure;
+        }
     }
 
     /**

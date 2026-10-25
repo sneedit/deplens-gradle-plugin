@@ -94,6 +94,11 @@ Check and inventory tasks do not edit files. They print console results and writ
 JSON under `build/reports/deplens/`: `<taskName>.json` for checks and interactive
 updates, `inventory.json` for inventory.
 
+Interactive updates finish with a summary of changed versions grouped by source
+file, using relative paths. Cancellation or keeping all current versions prints
+a short message. Use `--info` for the full check listing and shared-source
+consumer details; the JSON report retains the complete report view.
+
 ```sh
 ./gradlew depLensCheck --info      # source locations, contexts and failure reasons
 ./gradlew depLensCheck --offline   # cached dependency metadata; no remote wrapper feed

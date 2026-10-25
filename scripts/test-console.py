@@ -85,6 +85,26 @@ def exercise(root, scenario, keys, expected, wrapper_expected=None, failure=Fals
         assert 'shared="' + expected + '"' in (root / "gradle/libs.versions.toml").read_text()
         assert "g:unused" in log, "Unused shared alias was not displayed"
         assert "g:hidden" not in log, "Output-filtered dependency appeared in interactive output"
+        # The alternate screen disappears on Enter/Escape; inspect what remains in scrollback.
+        completion = log.split("\x1b[?1049l", 1)[-1]
+        assert "Selection " not in log and "Catalog aliases:" not in log, "Internal selection dump in normal output"
+        assert "recommended updates" not in log, "Check listing duplicated the interactive selector"
+        assert "affects [" not in completion, "Consumer dump in completion output"
+        if not failure:
+            if wrapper_expected is not None:
+                assert "applied 2 version update(s) in 2 file(s)" in completion, completion
+                assert "nested/gradle/wrapper/gradle-wrapper.properties" in completion, completion
+                assert "8.8 → " + wrapper_expected in completion, completion
+            elif scenario == "apply":
+                assert "applied 1 version update(s) in 1 file(s)" in completion, completion
+                assert "gradle/libs.versions.toml" in completion, completion
+                assert "versions.shared: 1.0 → 1.1" in completion, completion
+                summary = completion.split("DepLens: applied", 1)[1].split("Report:", 1)[0]
+                assert str(root) not in summary, completion
+            elif scenario == "dynamic-bulk-current":
+                assert "No updates selected; no sources changed." in completion, completion
+            else:
+                assert "Update selection cancelled; no sources changed." in completion, completion
         report = json.loads((root / "build/reports/deplens/depLensInteractiveUpdate.json").read_text())
         assert report['complete'] and report['checksComplete'], 'Incomplete interactive analysis'
         contexts = [e for e in report['entries'] if e['coordinate'] == 'g:context']

@@ -17,6 +17,7 @@ import org.gradle.work.DisableCachingByDefault;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Interactive local source updates, with no post-apply build or rollback.
@@ -78,6 +79,16 @@ public abstract class DepLensUpdateTask extends CheckUpdatesTask {
     }
 
     /**
+     * Keeps the full check listing available with --info without duplicating the selector.
+     */
+    @Override
+    protected void printConsoleReport(BuildInventory report, Path file, boolean compact) {
+        if (getLogger().isInfoEnabled()) super.printConsoleReport(report, file, compact);
+        if (!report.complete || !Boolean.TRUE.equals(report.checksComplete))
+            getLogger().warn("DepLens: checks incomplete. See {} for diagnostics.", displayPath(file));
+    }
+
+    /**
      * Opens the interactive selector and applies confirmed source edits after reporting.
      *
      * @param report inventory to read or update
@@ -85,10 +96,11 @@ public abstract class DepLensUpdateTask extends CheckUpdatesTask {
     @Override
     protected void finished(BuildInventory report) {
         UpdateSelection selection = new UpdateSelection(report, reportForOutput(report).entries);
-        selection.notices.forEach(message -> getLogger().warn("DepLens: {}", message));
-        // All group members remain available in normal console output, including long groups.
+        selection.notices.forEach(message -> getLogger().warn("DepLens: {}", message.replace(
+                getAnalysisModels().get().getFirst().build + "/", "")));
+        // Retain complete consumer details for troubleshooting without flooding normal output.
         for (var row : selection.rows)
-            getLogger().lifecycle("Selection {} at {}:{} affects {}", row.label(),
+            getLogger().info("Selection {} at {}:{} affects {}", row.label(),
                     row.source.file(), row.source.line(), row.consumers.stream().map(e -> e.type + " " + e.coordinate + " " + e.project).toList() + " Catalog aliases: " + row.catalogMembers);
         if (selection.rows.isEmpty()) {
             getLogger().lifecycle("No safely editable updates.");
@@ -109,11 +121,33 @@ public abstract class DepLensUpdateTask extends CheckUpdatesTask {
                             row.consumers.stream().map(com.sneedit.deplens.inventory.InventoryEntry::id).toList(), row.catalogMembers));
             Files.writeString(getReportFile().get().getAsFile().toPath(),
                     new GsonBuilder().setPrettyPrinting().serializeNulls().create().toJson(reportForOutput(report)));
-            getLogger().lifecycle("Applied selections to {} file(s): {}. No build or tests run after applying.", files.size(), files);
+            printApplied(selection, files);
         } catch (IOException failure) {
             throw new GradleException(java.util.Objects.toString(failure.getMessage(), "Failed to apply update selections"), failure);
         } finally {
             getOutputEvents().onOutput(new org.gradle.internal.logging.events.UserInputResumeEvent(System.currentTimeMillis()));
         }
+    }
+
+    private void printApplied(UpdateSelection selection, java.util.List<Path> files) {
+        long changed = selection.rows.stream().filter(row -> row.selected != 0).count();
+        if (changed == 0) {
+            getLogger().lifecycle("No updates selected; no sources changed.");
+            return;
+        }
+        getLogger().lifecycle("\nDepLens: applied {} version update(s) in {} file(s).", changed, files.size());
+        for (Path file : files) {
+            getLogger().lifecycle("\n  {}", displayPath(file));
+            for (var row : selection.rows)
+                if (row.selected != 0 && row.location.file().equals(file))
+                    getLogger().lifecycle("    {}: {} → {}", row.label(), row.options.getFirst(), row.target());
+        }
+        getLogger().lifecycle("\nNo build or tests run after applying.");
+        getLogger().lifecycle("Report: {}", displayPath(getReportFile().get().getAsFile().toPath()));
+    }
+
+    private String displayPath(Path file) {
+        Path root = Path.of(getAnalysisModels().get().getFirst().build).toAbsolutePath().normalize();
+        return root.relativize(file.toAbsolutePath().normalize()).toString();
     }
 }

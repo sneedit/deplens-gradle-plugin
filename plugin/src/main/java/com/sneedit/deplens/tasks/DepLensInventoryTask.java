@@ -190,9 +190,20 @@ public abstract class DepLensInventoryTask extends DefaultTask {
         Files.createDirectories(file.getParent());
         BuildInventory output = reportForOutput(report);
         Files.writeString(file, gson.toJson(output));
-        new InventoryReportPrinter(getLogger(), updates(), this::visible,
-                getAnalysisModels().get().getFirst().build, compact).print(output, file);
+        printConsoleReport(output, file, compact);
         finished(report);
+    }
+
+    /**
+     * Prints the saved report; interactive tasks can provide their own completion summary.
+     *
+     * @param report filtered report to display
+     * @param file saved JSON report path
+     * @param compact whether compact console output is requested
+     */
+    protected void printConsoleReport(BuildInventory report, Path file, boolean compact) {
+        new InventoryReportPrinter(getLogger(), updates(), this::visible,
+                getAnalysisModels().get().getFirst().build, compact).print(report, file);
     }
 
     /**

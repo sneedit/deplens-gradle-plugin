@@ -2,9 +2,9 @@
 
 Notable changes, generated from Conventional Commits by [git-cliff](https://git-cliff.org/).
 
-## Unreleased
+## [v0.3.0](https://github.com/sneedit/deplens-gradle-plugin/releases/tag/v0.3.0) - 2026-10-25
 
-[Compare changes](https://github.com/sneedit/deplens-gradle-plugin/compare/v0.2.0...HEAD)
+[Compare changes](https://github.com/sneedit/deplens-gradle-plugin/compare/v0.2.0...v0.3.0)
 
 ### Bug fixes
 

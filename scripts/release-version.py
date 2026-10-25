@@ -32,23 +32,32 @@ def update_examples(root, value):
         raise ValueError('Expected a stable release version X.Y.Z.')
     targets = {
         'examples/simple-java/build.gradle':
-            r"(?m)^(    id 'com\.sneedit\.deplens' version ')[^'\n]+(')$",
+            (r"(?m)^(    id 'com\.sneedit\.deplens' version ')[^'\n]+(')$",),
         'examples/multi-module/build.gradle':
-            r"(?m)^(    id 'com\.sneedit\.deplens' version ')[^'\n]+(')$",
+            (r"(?m)^(    id 'com\.sneedit\.deplens' version ')[^'\n]+(')$",),
         'examples/kotlin-dsl/build.gradle.kts':
-            r'(?m)^(    id\("com\.sneedit\.deplens"\) version ")[^"\n]+(")$',
+            (r'(?m)^(    id\("com\.sneedit\.deplens"\) version ")[^"\n]+(")$',),
         '.github/workflows/build.yml':
-            r'(?m)^(        run: ./gradlew publishToMavenLocal -Pversion=)[^ \n]+( --no-daemon)$',
+            (r'(?m)^(        run: ./gradlew publishToMavenLocal -Pversion=)[^ \n]+( --no-daemon)$',),
         'scripts/ci-matrix/run.py':
-            r"(?m)^(                commands = \[\['./gradlew', 'publishToMavenLocal', '-Pversion=)[^'\n]+(', '--no-daemon'\]\])$",
+            (r"(?m)^(                commands = \[\['./gradlew', 'publishToMavenLocal', '-Pversion=)[^'\n]+(', '--no-daemon'\]\])$",),
+        'README.md': (
+            r'(?m)^(Use DepLens `)[^`\n]+(` in your settings file\.)',
+            r'(?m)^(    id\("com\.sneedit\.deplens\.settings"\) version ")[^"\n]+("[ \t]*)$',
+            r"(?m)^(    id 'com\.sneedit\.deplens\.settings' version ')[^'\n]+('[ \t]*)$",
+            r'(?m)^(version `)[^`\n]+(` in `build\.gradle\.kts` or `build\.gradle`\.)',
+            r'(?m)^(\| )[^|\n]+( \| [^|\n]+ \| [^|\n]+ \| macOS or Linux \|)$',
+        ),
     }
     changes = []
-    for name, pattern in targets.items():
+    for name, patterns in targets.items():
         path = root / name
         original = path.read_bytes().decode('utf-8')
-        updated, count = re.subn(pattern, lambda match: match[1] + value + match[2], original)
-        if count != 1:
-            raise ValueError(f'{name}: expected exactly one example plugin version; found {count}.')
+        updated = original
+        for pattern in patterns:
+            updated, count = re.subn(pattern, lambda match: match[1] + value + match[2], updated)
+            if count != 1:
+                raise ValueError(f'{name}: expected exactly one release version location; found {count}.')
         if updated != original:
             changes.append((path, updated))
     for path, updated in changes:
@@ -103,7 +112,7 @@ if __name__ == "__main__":
             else:
                 changed = update_examples(Path(__file__).resolve().parent.parent, sys.argv[1])
                 if changed:
-                    print('Updated example and CI versions: ' + ', '.join(changed))
+                    print('Updated README, example and CI versions: ' + ', '.join(changed))
                     sys.exit(3)
         except (ValueError, OSError) as error:
             sys.exit(f'Error: {error}')

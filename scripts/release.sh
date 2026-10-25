@@ -36,10 +36,10 @@ else
     status=$?
     if [ "$status" -eq 3 ]; then
         git add -- examples/simple-java/build.gradle examples/multi-module/build.gradle \
-            examples/kotlin-dsl/build.gradle.kts .github/workflows/build.yml scripts/ci-matrix/run.py
+            examples/kotlin-dsl/build.gradle.kts .github/workflows/build.yml scripts/ci-matrix/run.py README.md
         git commit -m "chore: prepare release $version"
     else
-        fail "Could not update example and CI versions; no release tag was created."
+        fail "Could not update README, example and CI versions; no release tag was created."
     fi
 fi
 

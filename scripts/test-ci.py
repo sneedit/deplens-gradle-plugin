@@ -56,7 +56,7 @@ class ReleaseScriptChecks(unittest.TestCase):
         source = Path(__file__).resolve().parents[1]
         for name in ('examples/simple-java/build.gradle', 'examples/multi-module/build.gradle',
                      'examples/kotlin-dsl/build.gradle.kts', '.github/workflows/build.yml',
-                     'scripts/ci-matrix/run.py'):
+                     'scripts/ci-matrix/run.py', 'README.md'):
             target = self.repository / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source / name, target)
@@ -100,12 +100,51 @@ class ReleaseScriptChecks(unittest.TestCase):
         self.assertEqual(prepared, self.git('ls-remote', 'origin', 'refs/tags/v0.2.0^{}').split()[0])
         self.assertEqual('', self.git('status', '--porcelain'))
         changed = self.git('diff', '--name-only', before, prepared).splitlines()
-        self.assertEqual(5, len(changed))
+        self.assertEqual(6, len(changed))
         for name in changed:
             content = (self.repository / name).read_text()
             self.assertIn('0.2.0', content)
             self.assertNotIn('0.1.1', content)
         self.assertEqual([], release.update_examples(self.repository, '0.2.0'))
+
+    def test_readme_only_update_is_committed_and_tagged(self):
+        readme = self.repository / 'README.md'
+        stale = readme.read_text()
+        release.update_examples(self.repository, '0.3.0')
+        readme.write_text(stale)
+        self.git('add', '.')
+        self.git('commit', '-m', 'Prepare examples without README')
+        self.git('push', 'origin', 'main')
+        before = self.git('rev-parse', 'HEAD')
+        result = self.release('0.3.0')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual('README.md', self.git('diff', '--name-only', before, 'HEAD'))
+        self.assertEqual(self.git('rev-parse', 'HEAD'), self.git('rev-parse', 'v0.3.0^{}'))
+        self.assertEqual('', self.git('status', '--porcelain'))
+        self.assertIn('Use DepLens `0.3.0`', readme.read_text())
+
+    def test_readme_update_preserves_unrelated_versions_and_formatting(self):
+        readme = self.repository / 'README.md'
+        original = readme.read_bytes()
+        unrelated = b'\nDependency: `org.example:lib:0.1.1`.\n<!-- keep formatting -->\n'
+        readme.write_bytes(original + unrelated)
+        release.update_examples(self.repository, '0.3.0')
+        self.assertEqual(original.replace(b'0.1.1', b'0.3.0') + unrelated, readme.read_bytes())
+        self.assertEqual([], release.update_examples(self.repository, '0.3.0'))
+
+    def test_missing_or_duplicate_readme_version_prevents_all_writes(self):
+        readme = self.repository / 'README.md'
+        original = readme.read_text()
+        lines = [line for line in original.splitlines(keepends=True) if '0.1.1' in line]
+        self.assertEqual(5, len(lines))
+        for line in lines:
+            for replacement in ('', line + line):
+                with self.subTest(line=line, replacement=replacement):
+                    readme.write_text(original.replace(line, replacement))
+                    before = self.git('diff')
+                    with self.assertRaisesRegex(ValueError, 'README.md: expected exactly one'):
+                        release.update_examples(self.repository, '0.3.0')
+                    self.assertEqual(before, self.git('diff'))
 
     def test_failed_preparation_commit_does_not_create_or_publish_tag(self):
         before = self.git('rev-parse', 'HEAD')

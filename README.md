@@ -37,13 +37,13 @@ repository with fixed versions. The interactive run was cancelled without edits.
 
 ## Installation
 
-Use DepLens `0.1.0` in your settings file. The settings plugin also applies DepLens
+Use DepLens `0.2.0` in your settings file. The settings plugin also applies DepLens
 to the root project and enables settings-plugin checks.
 
 ```kotlin
 // settings.gradle.kts
 plugins {
-    id("com.sneedit.deplens.settings") version "0.1.0"
+    id("com.sneedit.deplens.settings") version "0.2.0"
 }
 ```
 
@@ -53,14 +53,14 @@ plugins {
 ```groovy
 // settings.gradle
 plugins {
-    id 'com.sneedit.deplens.settings' version '0.1.0'
+    id 'com.sneedit.deplens.settings' version '0.2.0'
 }
 ```
 
 </details>
 
 For the project plugin instead, use `com.sneedit.deplens` with
-version `0.1.0` in `build.gradle.kts` or `build.gradle`. Use the settings entry point
+version `0.2.0` in `build.gradle.kts` or `build.gradle`. Use the settings entry point
 when you need settings-plugin resolution context. With either entry point,
 configure `depLens { ... }` in the root project's build script.
 
@@ -73,7 +73,7 @@ configure `depLens { ... }` in the root project's build script.
 
 | DepLens | Gradle | Java | Interactive terminal |
 | --- | --- | --- | --- |
-| 0.1.0 | 8.8+ | 21+ | macOS or Linux |
+| 0.2.0 | 8.8+ | 21+ | macOS or Linux |
 
 Checks support Configuration Cache and Isolated Projects. Other plugins and build
 logic must support them too. Custom resolution rules can prevent cache reuse;
@@ -434,9 +434,10 @@ a version numerically higher than the highest stable `vX.Y.Z` tag on `origin`.
 Prerelease and unrelated tags are ignored; without stable remote tags, any valid
 version is accepted. Remote tags are the release baseline, including tags whose
 publication may still be running or have failed. The script automatically updates
+the README installation versions and compatibility table, along with
 the plugin version in the three standalone examples and their local publication
 commands in the CI workflow and matrix runner. If files change, it stages those
-five files and creates a `chore: prepare release X.Y.Z` commit automatically.
+six files and creates a `chore: prepare release X.Y.Z` commit automatically.
 In the same invocation, it creates an annotated `vX.Y.Z` tag on the prepared commit
 and atomically pushes both `main` and the tag. If either ref is rejected, neither
 remote ref is updated. If versions already match, it tags the current commit

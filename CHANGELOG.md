@@ -9,6 +9,7 @@ Notable changes, generated from Conventional Commits by [git-cliff](https://git-
 ### Bug fixes
 
 - Simplify release preparation and development version bump ([e130981](https://github.com/sneedit/deplens-gradle-plugin/commit/e130981a1643b92fb657c9038e10e29bc5925fe8))
+- Improve interactive update completion output ([2180d2f](https://github.com/sneedit/deplens-gradle-plugin/commit/2180d2fe5f0797a84eaf7f7013afc56d10e6b4af))
 
 ## [v0.2.0](https://github.com/sneedit/deplens-gradle-plugin/releases/tag/v0.2.0) - 2026-10-21
 

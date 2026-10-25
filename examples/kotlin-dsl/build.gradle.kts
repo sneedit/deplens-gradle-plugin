@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "2.2.0"
-    id("com.sneedit.deplens") version "0.2.0"
+    id("com.sneedit.deplens") version "0.3.0"
 }
 
 repositories {

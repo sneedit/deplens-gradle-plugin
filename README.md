@@ -37,13 +37,13 @@ repository with fixed versions. The interactive run was cancelled without edits.
 
 ## Installation
 
-Use DepLens `0.2.0` in your settings file. The settings plugin also applies DepLens
+Use DepLens `0.3.0` in your settings file. The settings plugin also applies DepLens
 to the root project and enables settings-plugin checks.
 
 ```kotlin
 // settings.gradle.kts
 plugins {
-    id("com.sneedit.deplens.settings") version "0.2.0"
+    id("com.sneedit.deplens.settings") version "0.3.0"
 }
 ```
 
@@ -53,14 +53,14 @@ plugins {
 ```groovy
 // settings.gradle
 plugins {
-    id 'com.sneedit.deplens.settings' version '0.2.0'
+    id 'com.sneedit.deplens.settings' version '0.3.0'
 }
 ```
 
 </details>
 
 For the project plugin instead, use `com.sneedit.deplens` with
-version `0.2.0` in `build.gradle.kts` or `build.gradle`. Use the settings entry point
+version `0.3.0` in `build.gradle.kts` or `build.gradle`. Use the settings entry point
 when you need settings-plugin resolution context. With either entry point,
 configure `depLens { ... }` in the root project's build script.
 
@@ -73,7 +73,7 @@ configure `depLens { ... }` in the root project's build script.
 
 | DepLens | Gradle | Java | Interactive terminal |
 | --- | --- | --- | --- |
-| 0.2.0 | 8.8+ | 21+ | macOS or Linux |
+| 0.3.0 | 8.8+ | 21+ | macOS or Linux |
 
 Checks support Configuration Cache and Isolated Projects. Other plugins and build
 logic must support them too. Custom resolution rules can prevent cache reuse;

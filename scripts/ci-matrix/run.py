@@ -84,7 +84,7 @@ def main():
         os.chdir(workspace)
         try:
             if examples:
-                commands = [['./gradlew', 'publishToMavenLocal', '-Pversion=0.2.0', '--no-daemon']]
+                commands = [['./gradlew', 'publishToMavenLocal', '-Pversion=0.3.0', '--no-daemon']]
                 commands += [['./gradlew', '-p', f'examples/{name}', ':depLensInventory',
                               ':depLensCheckDependencies', '--no-daemon', '--stacktrace']
                              for name in ('simple-java', 'multi-module', 'kotlin-dsl')]
